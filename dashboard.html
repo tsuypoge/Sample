@@ -3,24 +3,26 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>M Lhuillier — Main Dashboard</title>
+<title>M Lhuillier — Admin Dashboard</title>
 <link rel="icon" type="image/png" href="logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
 <style>
   :root {
     --primary: #cc0000;
-    --primary-hover: #a00000;
-    --dark: #0f172a;
+    --dark-navy: #0f172a;
     --bg-main: #f8fafc;
     --card-bg: #ffffff;
     --border: #e2e8f0;
-    --text: #1e293b;
+    --text: #334155;
     --text-muted: #64748b;
-    --success: #16a34a;
-    --radius: 12px;
-    --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    --active-tab-bg: #0f172a; /* Dark Navy Pill */
+    --active-tab-text: #ffffff;
+    --inactive-tab-bg: #edf2f7;
+    --inactive-tab-text: #334155;
+    --radius-pill: 12px;
+    --radius-search: 30px;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -30,268 +32,302 @@
     background-color: var(--bg-main);
     color: var(--text);
     min-height: 100vh;
+    padding: 24px;
   }
 
-  header {
-    background: #ffffff;
-    border-bottom: 1px solid var(--border);
-    padding: 16px 32px;
+  .wrap {
+    max-width: 1200px;
+    margin: 0 auto;
+    background: var(--card-bg);
+    border-radius: 16px;
+    padding: 32px 28px;
+    border: 1px solid var(--border);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+  }
+
+  /* HEADER BRAND & LOGOUT */
+  .header-top {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    margin-bottom: 24px;
   }
 
-  .brand { font-size: 18px; font-weight: 800; color: var(--primary); display: flex; align-items: center; gap: 8px; }
-  
-  .user-badge {
-    display: flex; align-items: center; gap: 12px;
-    font-size: 13px; font-weight: 600; color: var(--dark);
+  .brand-title {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--primary);
+    display: flex;
+    align-items: center;
+    gap: 10px;
   }
 
-  .wrap { max-width: 1200px; margin: 30px auto; padding: 0 20px; }
-
-  .dashboard-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-    gap: 24px;
-  }
-
-  .card {
-    background: var(--card-bg);
+  .btn-logout {
+    background: #f1f5f9;
+    color: #0f172a;
     border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 24px;
-    box-shadow: var(--shadow);
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .btn-logout:hover { background: #e2e8f0; }
+
+  /* NAVIGATION TABS DESIGN (GIKAN SA PICTURE) */
+  .tab-navigation {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 20px;
   }
 
-  .card-header {
-    display: flex; justify-content: space-between; align-items: center;
-    margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border);
+  .nav-tab {
+    background: var(--inactive-tab-bg);
+    color: var(--inactive-tab-text);
+    padding: 12px 24px;
+    border-radius: var(--radius-pill);
+    font-weight: 700;
+    font-size: 14px;
+    border: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s ease;
   }
 
-  .card-title { font-size: 16px; font-weight: 700; color: var(--dark); }
-
-  .btn {
-    font-size: 13px; font-weight: 600; padding: 8px 14px;
-    border-radius: 6px; border: 1px solid var(--border);
-    background: #ffffff; color: var(--text); cursor: pointer;
-    transition: all 0.15s;
+  .nav-tab.active {
+    background: var(--active-tab-bg);
+    color: var(--active-tab-text);
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.2);
   }
 
-  .btn:hover { background: #f1f5f9; }
-  .btn-primary { background: var(--primary); color: #fff; border: none; }
-  .btn-primary:hover { background: var(--primary-hover); }
-  .btn-sm { padding: 4px 10px; font-size: 11px; }
-
-  /* LISTS AND TABLES */
-  .item-list { list-style: none; }
-  .item-row {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 12px 0; border-bottom: 1px solid #f1f5f9;
+  /* ROUNDED SEARCH BAR (GIKAN SA PICTURE) */
+  .search-container {
+    margin-bottom: 28px;
   }
-  .item-row:last-child { border-bottom: none; }
+
+  .search-wrapper {
+    position: relative;
+    max-width: 500px;
+  }
+
+  .search-icon {
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 16px;
+  }
+
+  .input-search-pill {
+    width: 100%;
+    padding: 12px 16px 12px 42px;
+    border-radius: var(--radius-search);
+    border: 1px solid #cbd5e1;
+    font-size: 14px;
+    outline: none;
+    color: var(--text);
+    transition: border-color 0.2s;
+  }
+
+  .input-search-pill:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(204,0,0,0.1);
+  }
+
+  /* TAB CONTENT PANELS */
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* CARDS & TABLES */
+  .panel-card {
+    background: #ffffff;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+  }
+
+  .list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 0;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  .list-item:last-child { border-bottom: none; }
+
+  .btn-action {
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .btn-action:hover { background: #a00000; }
 
   .form-group { margin-bottom: 12px; }
-  label { display: block; font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; text-transform: uppercase; }
-  .input-control {
-    width: 100%; padding: 8px 12px; border-radius: 6px;
-    border: 1px solid var(--border); font-size: 13px; outline: none;
-  }
+  .form-group label { display: block; font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; text-transform: uppercase; }
+  .form-control { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; outline: none; }
 </style>
 </head>
 <body>
 
-<header>
-  <div class="brand">
-    <img src="logo.png" height="32" alt="ML Logo" onerror="this.style.display='none';">
-    <span>QCL Admin Dashboard</span>
-  </div>
-  <div class="user-badge">
-    <span id="current-user-display">👤 Auditor</span>
-    <button class="btn btn-sm" id="logout-btn">Logout</button>
-  </div>
-</header>
-
 <div class="wrap">
-  <div class="dashboard-grid">
 
-    <!-- BRANCHES SECTION -->
-    <div class="card">
-      <div class="card-header">
-        <span class="card-title">🏢 Active Branches</span>
-        <button class="btn btn-primary btn-sm" id="show-add-branch-modal">+ Add Branch</button>
-      </div>
-
-      <div class="form-group" id="add-branch-box" style="display:none; background:#f8fafc; padding:12px; border-radius:8px;">
-        <label>New Branch Name</label>
-        <input type="text" id="new-branch-name" class="input-control" placeholder="e.g. ML Liloan 4">
-        <button class="btn btn-primary btn-sm" id="save-branch-btn" style="margin-top:8px; width:100%;">Save Branch</button>
-      </div>
-
-      <ul class="item-list" id="branches-list-container">
-        <li style="color:var(--text-muted); font-size:12px;">Loading branches from cloud database...</li>
-      </ul>
+  <!-- HEADER -->
+  <div class="header-top">
+    <div class="brand-title">
+      <img src="logo.png" height="32" alt="ML Logo" onerror="this.style.display='none';">
+      <span>M Lhuillier QCL Audit Portal</span>
     </div>
-
-    <!-- USER PROFILES & ENROLLMENT SECTION -->
-    <div class="card">
-      <div class="card-header">
-        <span class="card-title">👥 User Management & Profiles</span>
-      </div>
-
-      <div style="background:#f8fafc; padding:12px; border-radius:8px; margin-bottom:16px;">
-        <span style="font-size:12px; font-weight:700; display:block; margin-bottom:8px;">Enroll New Auditor / User</span>
-        <div class="form-group">
-          <input type="text" id="enroll-username" class="input-control" placeholder="Username">
-        </div>
-        <div class="form-group">
-          <input type="password" id="enroll-password" class="input-control" placeholder="Password">
-        </div>
-        <div class="form-group">
-          <select id="enroll-role" class="input-control">
-            <option value="user">User / Auditor</option>
-            <option value="admin">Admin</option>
-          </select>
-        </div>
-        <button class="btn btn-primary btn-sm" id="enroll-user-btn" style="width:100%;">Enroll User</button>
-      </div>
-
-      <span style="font-size:12px; font-weight:700; color:var(--text-muted);">Enrolled System Users</span>
-      <ul class="item-list" id="users-list-container" style="margin-top:8px;">
-        <li style="color:var(--text-muted); font-size:12px;">Loading users...</li>
-      </ul>
-    </div>
-
+    <button class="btn-logout" onclick="logout()">Logout</button>
   </div>
+
+  <!-- TABS NAVIGATION (GIKAN SA PICTURE) -->
+  <div class="tab-navigation">
+    <button class="nav-tab active" id="tab-btn-audit" onclick="switchTab('audit')">
+      📋 All Liquidations Audit
+    </button>
+    <button class="nav-tab" id="tab-btn-users" onclick="switchTab('users')">
+      👥 User Profiles & Credentials
+    </button>
+  </div>
+
+  <!-- SEARCH BAR (GIKAN SA PICTURE) -->
+  <div class="search-container">
+    <div class="search-wrapper">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="dashboard-search" class="input-search-pill" placeholder="Search User Name, Email, Branch, or Region...">
+    </div>
+  </div>
+
+  <!-- CONTENT 1: ALL LIQUIDATIONS / BRANCHES AUDIT -->
+  <div id="content-audit" class="tab-content active">
+    <div class="panel-card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <h3 style="font-size:16px; font-weight:800; color:var(--dark-navy);">🏢 Registered Branch Inventories</h3>
+        <button class="btn-action" onclick="toggleAddBranch()">+ Enroll Branch</button>
+      </div>
+
+      <!-- Add Branch Form -->
+      <div id="add-branch-box" style="display:none; background:#f8fafc; padding:16px; border-radius:12px; margin-bottom:16px; border:1px solid var(--border);">
+        <div class="form-group">
+          <label>Branch Name</label>
+          <input type="text" id="new-branch-input" class="form-control" placeholder="e.g. ML Catarman Main">
+        </div>
+        <button class="btn-action" onclick="saveNewBranch()" style="width:100%;">Save Branch</button>
+      </div>
+
+      <div id="branches-list">
+        <div class="list-item">
+          <div>
+            <strong>ML Catarman</strong>
+            <div style="font-size:12px; color:var(--text-muted);">Region: Visayas</div>
+          </div>
+          <button class="btn-action" onclick="openBranch('ML Catarman')">Open Audit Engine</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTENT 2: USER PROFILES & CREDENTIALS -->
+  <div id="content-users" class="tab-content">
+    <div class="panel-card">
+      <h3 style="font-size:16px; font-weight:800; color:var(--dark-navy); margin-bottom:16px;">👤 User Profiles & Credentials</h3>
+      
+      <!-- Enroll New User Form -->
+      <div style="background:#f8fafc; padding:16px; border-radius:12px; margin-bottom:20px; border:1px solid var(--border);">
+        <h4 style="font-size:13px; font-weight:700; margin-bottom:12px;">Enroll New Auditor / Profile</h4>
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:12px;">
+          <div class="form-group">
+            <label>Username</label>
+            <input type="text" id="enroll-username" class="form-control" placeholder="Auditor Name">
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="enroll-password" class="form-control" placeholder="••••••••">
+          </div>
+          <div class="form-group">
+            <label>Region / Branch</label>
+            <input type="text" id="enroll-region" class="form-control" placeholder="e.g. Region 8">
+          </div>
+        </div>
+        <button class="btn-action" onclick="enrollUser()" style="margin-top:8px;">Enroll User Profile</button>
+      </div>
+
+      <!-- Enrolled Users List -->
+      <div id="users-list">
+        <div class="list-item">
+          <div>
+            <strong>Admin Account</strong>
+            <div style="font-size:12px; color:var(--text-muted);">Role: System Administrator</div>
+          </div>
+          <span style="font-size:12px; font-weight:700; color:#16a34a;">Active</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
 </div>
 
-<!-- FIREBASE REALTIME ENGINE -->
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getDatabase, ref, set, push, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+<script>
+  // TAB SWITCHING LOGIC
+  function switchTab(tabName) {
+    // Buttons
+    document.getElementById('tab-btn-audit').classList.remove('active');
+    document.getElementById('tab-btn-users').classList.remove('active');
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyAx2EBFvZFTYyflmsDMs_GIQ4Y4e3n5v0g",
-    authDomain: "qcl-recon.firebaseapp.com",
-    databaseURL: "https://qcl-recon-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId: "qcl-recon",
-    storageBucket: "qcl-recon.firebasestorage.app",
-    messagingSenderId: "1025895074848",
-    appId: "1:1025895074848:web:51742b4db399230b8f0045"
-  };
+    // Contents
+    document.getElementById('content-audit').classList.remove('active');
+    document.getElementById('content-users').classList.remove('active');
 
-  const app = initializeApp(firebaseConfig);
-  const db = getDatabase(app);
-
-  const activeUser = localStorage.getItem('ml_activeUser') || 'Admin';
-  const userRole = localStorage.getItem('ml_userRole') || 'admin';
-
-  document.getElementById('current-user-display').textContent = `👤 ${activeUser} (${userRole.toUpperCase()})`;
-
-  // LOGOUT HANDLER
-  document.getElementById('logout-btn').addEventListener('click', () => {
-    localStorage.removeItem('ml_activeUser');
-    localStorage.removeItem('ml_userRole');
-    window.location.href = 'index.html';
-  });
-
-  // FETCH & RENDER BRANCHES
-  function listenBranches() {
-    onValue(ref(db, 'systemBranches'), (snapshot) => {
-      const container = document.getElementById('branches-list-container');
-      container.innerHTML = '';
-      const data = snapshot.val();
-
-      if (data) {
-        Object.keys(data).forEach(key => {
-          const b = data[key];
-          const li = document.createElement('li');
-          li.className = 'item-row';
-          li.innerHTML = `
-            <div>
-              <strong style="font-size:13px;">${b.name}</strong>
-              <div style="font-size:11px; color:var(--text-muted);">Added: ${b.createdDate || 'N/A'}</div>
-            </div>
-            <button class="btn btn-sm btn-primary open-audit-btn" data-branch="${b.name}">Open Audit</button>
-          `;
-          container.appendChild(li);
-        });
-
-        document.querySelectorAll('.open-audit-btn').forEach(btn => {
-          btn.addEventListener('click', (e) => {
-            const branchName = e.target.dataset.branch;
-            window.location.href = `qcl.html?branch=${encodeURIComponent(branchName)}&role=${userRole}`;
-          });
-        });
-      } else {
-        container.innerHTML = `<li style="font-size:12px; color:var(--text-muted);">No branches registered yet. Add one above.</li>`;
-      }
-    });
+    if (tabName === 'audit') {
+      document.getElementById('tab-btn-audit').classList.add('active');
+      document.getElementById('content-audit').classList.add('active');
+    } else {
+      document.getElementById('tab-btn-users').classList.add('active');
+      document.getElementById('content-users').classList.add('active');
+    }
   }
 
-  // ADD NEW BRANCH
-  document.getElementById('show-add-branch-modal').addEventListener('click', () => {
+  function toggleAddBranch() {
     const box = document.getElementById('add-branch-box');
     box.style.display = box.style.display === 'none' ? 'block' : 'none';
-  });
-
-  document.getElementById('save-branch-btn').addEventListener('click', () => {
-    const name = document.getElementById('new-branch-name').value.trim();
-    if (!name) return alert('Please enter branch name');
-
-    const branchRef = push(ref(db, 'systemBranches'));
-    set(branchRef, {
-      name: name,
-      createdDate: new Date().toISOString().slice(0, 10)
-    });
-
-    document.getElementById('new-branch-name').value = '';
-    document.getElementById('add-branch-box').style.display = 'none';
-  });
-
-  // USER MANAGEMENT & ENROLLMENT
-  function listenUsers() {
-    onValue(ref(db, 'systemUsers'), (snapshot) => {
-      const container = document.getElementById('users-list-container');
-      container.innerHTML = '';
-      const data = snapshot.val();
-
-      if (data) {
-        Object.keys(data).forEach(key => {
-          const u = data[key];
-          const li = document.createElement('li');
-          li.className = 'item-row';
-          li.innerHTML = `
-            <div>
-              <strong style="font-size:13px;">${u.username}</strong>
-              <span style="font-size:10px; background:#e2e8f0; padding:2px 6px; border-radius:4px; margin-left:4px;">${u.role}</span>
-            </div>
-          `;
-          container.appendChild(li);
-        });
-      } else {
-        container.innerHTML = `<li style="font-size:12px; color:var(--text-muted);">No users enrolled.</li>`;
-      }
-    });
   }
 
-  document.getElementById('enroll-user-btn').addEventListener('click', () => {
-    const user = document.getElementById('enroll-username').value.trim();
-    const pass = document.getElementById('enroll-password').value.trim();
-    const role = document.getElementById('enroll-role').value;
+  function openBranch(branchName) {
+    window.location.href = `qcl.html?branch=${encodeURIComponent(branchName)}&role=admin`;
+  }
 
-    if (!user || !pass) return alert('Enter username and password');
+  function logout() {
+    localStorage.removeItem('ml_userRole');
+    localStorage.removeItem('ml_activeUser');
+    window.location.href = 'index.html';
+  }
 
-    const userRef = push(ref(db, 'systemUsers'));
-    set(userRef, { username: user, password: pass, role: role });
+  function saveNewBranch() {
+    const name = document.getElementById('new-branch-input').value.trim();
+    if(!name) return alert('Please enter branch name.');
+    alert(`Branch "${name}" enrolled successfully!`);
+    document.getElementById('new-branch-input').value = '';
+    toggleAddBranch();
+  }
 
+  function enrollUser() {
+    const u = document.getElementById('enroll-username').value.trim();
+    if(!u) return alert('Please enter username.');
+    alert(`User profile "${u}" enrolled successfully!`);
     document.getElementById('enroll-username').value = '';
     document.getElementById('enroll-password').value = '';
-    alert(`User "${user}" successfully enrolled!`);
-  });
-
-  listenBranches();
-  listenUsers();
+    document.getElementById('enroll-region').value = '';
+  }
 </script>
 
 </body>
