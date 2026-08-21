@@ -24,6 +24,8 @@
     --inactive-tab-text: #334155;
     --radius-pill: 12px;
     --radius-search: 30px;
+    --danger: #dc2626;
+    --danger-hover: #b91c1c;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -166,6 +168,23 @@
     cursor: pointer;
   }
   .btn-action:hover { background: #a00000; }
+
+  .btn-delete {
+    background: #fef2f2;
+    color: var(--danger);
+    border: 1px solid #fecaca;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-delete:hover {
+    background: var(--danger);
+    color: #ffffff;
+    border-color: var(--danger);
+  }
 
   .modal-overlay {
     position: fixed;
@@ -316,7 +335,7 @@
         <button class="btn-action" onclick="toggleUserBranchBox()">+ Open New Branch Audit</button>
       </div>
 
-      <!-- NEW BRANCH DIRECT REDIRECT BOX FOR USER -->
+      <!-- NEW BRANCH DIRECT REDIRECT BOX -->
       <div id="user-branch-box" style="display:none; background:#f8fafc; padding:16px; border-radius:12px; margin-bottom:16px; border:1px solid var(--border);">
         <div style="margin-bottom:10px;">
           <label style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Enter Branch Name</label>
@@ -417,7 +436,7 @@
 <!-- FIREBASE SDK INITIALIZATION -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getDatabase, ref, set, push, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+  import { getDatabase, ref, set, push, onValue, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyAx2EBFvZFTYyflmsDMs_GIQ4Y4e3n5v0g",
@@ -478,12 +497,17 @@
         const foundPTN = tickets.filter(t => t.found).length;
         const pct = totalPTN > 0 ? Math.round((foundPTN / totalPTN) * 100) : 0;
         
-        // Clean up title
-        const branchName = slug.replace(/-/g, ' ').toUpperCase();
+        const branchName = item.branchName || slug.replace(/-/g, ' ').toUpperCase();
 
         const div = document.createElement('div');
         div.className = 'list-item branch-item';
         div.setAttribute('data-name', branchName);
+
+        // CONDITIONAL RENDER: ADMIN GETS DELETE BUTTON
+        const deleteBtnHTML = currentUserRole === 'admin' 
+          ? `<button class="btn-delete" onclick="deleteBranchData('${slug}', '${branchName}')">🗑️ Delete</button>` 
+          : '';
+
         div.innerHTML = `
           <div>
             <strong style="font-size:14px; color:var(--dark-navy);">${branchName}</strong>
@@ -491,12 +515,36 @@
               Progress: <b style="color:var(--primary);">${foundPTN} / ${totalPTN} Found</b> (${pct}%)
             </div>
           </div>
-          <button class="btn-action" onclick="openBranch('${branchName}')">Open Audit Engine</button>
+          <div style="display:flex; gap:8px;">
+            <button class="btn-action" onclick="openBranch('${branchName}')">Open Audit Engine</button>
+            ${deleteBtnHTML}
+          </div>
         `;
         container.appendChild(div);
       });
     });
   }
+
+  // ADMIN-ONLY DELETE BRANCH FUNCTION
+  window.deleteBranchData = function(slug, branchName) {
+    if (currentUserRole !== 'admin') {
+      alert("❌ Unauthorized: Admin access required to delete branch records.");
+      return;
+    }
+
+    if (confirm(`⚠️ Are you sure you want to PERMANENTLY DELETE "${branchName}"?\n\nThis will delete all PTNs and audit records from the Cloud Database!`)) {
+      // Remove from Firebase Realtime Database
+      remove(ref(db, `qclStore/${slug}`))
+        .then(() => {
+          // Also clear from local storage cache
+          localStorage.removeItem(`qcl_data_${slug}`);
+          alert(`✓ Branch "${branchName}" has been successfully deleted from database.`);
+        })
+        .catch(err => {
+          alert("❌ Error deleting branch: " + err.message);
+        });
+    }
+  };
 
   function listenUsers() {
     onValue(ref(db, 'systemUsers'), (snapshot) => {
