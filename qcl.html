@@ -7,10 +7,10 @@
 <link rel="icon" type="image/png" href="logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet">
-<!-- LIBRARIES FOR EXCEL, PDF & BARCODE SCANNER -->
+
+<!-- EXCEL & PDF LIBRARIES -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 
 <style>
   :root {
@@ -52,7 +52,6 @@
 
   .grid-uploads { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 20px; }
   .upload-card { background: var(--card-bg); border: 2px dashed var(--border); border-radius: var(--radius); padding: 20px; text-align: center; transition: all 0.2s; }
-  .upload-card.done { border-style: solid; border-color: var(--success); background: var(--success-bg); }
 
   .counter-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 20px; }
   .counter-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 20px; display: flex; flex-direction: column; justify-content: center; box-shadow: 0 1px 3px rgba(0,0,0,0.03); }
@@ -80,9 +79,21 @@
   .found-check { width: 20px; height: 20px; accent-color: var(--success); cursor: pointer; }
 
   .tag-cat { font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; background: #e2e8f0; }
+
+  #loading-overlay {
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(4px);
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    color: #fff; font-weight: 700; z-index: 10000; display: none;
+  }
 </style>
 </head>
 <body>
+
+<div id="loading-overlay">
+  <div style="font-size: 24px; margin-bottom: 10px;">⏳ Processing Upload...</div>
+  <div style="font-size: 13px; color: #cbd5e1;">Reading pawn tickets & syncing to cloud...</div>
+</div>
 
 <header>
   <div class="header-wrap">
@@ -147,7 +158,7 @@
   </div>
 
   <div class="controls-bar">
-    <input type="text" id="search" class="input-search" placeholder="🔎 Search PTN or item description...">
+    <input type="text" id="search" class="input-search" placeholder="🔎 Search PTN or Description...">
     <button class="btn btn-primary" id="clear-all-btn" style="background:#0f172a;" onclick="clearBranchInventory()">🗑️ Reset Branch Audit Data</button>
   </div>
 
@@ -165,7 +176,7 @@
         </tr>
       </thead>
       <tbody id="ledger-body">
-        <tr><td colspan="7" style="text-align: center; color: var(--text-muted);">Upload files to display inventory.</td></tr>
+        <tr><td colspan="7" style="text-align: center; color: var(--text-muted);">Upload files above to populate inventory.</td></tr>
       </tbody>
     </table>
   </div>
@@ -187,10 +198,6 @@
 
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
-
-  if (typeof pdfjsLib !== 'undefined') {
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-  }
 
   let currentBranch = "";
   let currentAuditDate = "";
@@ -299,7 +306,7 @@
     });
   }
 
-  // SMART UPLOAD ENGINE (HANDLES EXCEL, CSV & PDF)
+  // EXACT FORMAT PARSER FOR PRENDA.XLSX, TE.XLSX, REAPP.XLSX
   $$('.cat-upload-btn').forEach(btn => btn.addEventListener('click', () => {
     document.querySelector(`.cat-file-input[data-cat="${btn.dataset.cat}"]`).click();
   }));
@@ -309,81 +316,76 @@
     const catKey = e.target.dataset.cat.toUpperCase();
     if (!file) return;
 
-    try {
-      let extractedRows = [];
+    $('#loading-overlay').style.display = 'flex';
 
-      if (file.name.toLowerCase().endsWith('.pdf')) {
-        // PDF PARSER
-        const arrayBuffer = await file.arrayBuffer();
-        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-        let fullText = "";
-        for (let i = 1; i <= pdf.numPages; i++) {
-          const page = await pdf.getPage(i);
-          const textContent = await page.getTextContent();
-          fullText += textContent.items.map(item => item.str).join(" ") + "\n";
-        }
-        
-        // Find PTNs in PDF text using Regex Pattern (Matches PTN numbers e.g. 102001-12345 o numeric PTNs)
-        const ptnMatches = fullText.match(/\b\d{5,}(?:-\d+)?\b/g) || [];
-        ptnMatches.forEach(ptnStr => {
-          extractedRows.push({ ptn: ptnStr, desc: 'PDF Item', loan: 0 });
-        });
-
-      } else {
-        // EXCEL / CSV PARSER
+    setTimeout(async () => {
+      try {
         const buf = await file.arrayBuffer();
-        const wb = XLSX.read(buf, {type:'array'});
+        const wb = XLSX.read(buf, {type:'array', cellDates:true});
         const sheet = wb.Sheets[wb.SheetNames[0]];
         const rows = XLSX.utils.sheet_to_json(sheet, {header:1});
 
-        rows.forEach(r => {
-          if (!r || r.length === 0) return;
-          
-          // SCAN ALL COLUMNS TO FIND PTN
-          for (let col = 0; col < r.length; col++) {
-            const val = String(r[col] || '').trim();
-            // Matching PTN (digits o formatted numbers)
-            if (val.match(/^\d{5,}(-\d+)?$/) || val.match(/^[A-Z0-9]{8,12}$/)) {
-              extractedRows.push({
-                ptn: val,
-                desc: r[col + 1] || r[col + 2] || 'Jewelry/Item',
-                loan: r[col + 2] || r[col + 3] || 0
-              });
-              break; 
-            }
+        const extractedItems = [];
+        let lastValidPtn = "";
+        let lastValidDate = currentAuditDate;
+
+        rows.forEach((row, rowIdx) => {
+          if (!row || row.length === 0 || rowIdx === 0) return; // Skip Header Row
+
+          let rawPtn = String(row[1] || '').trim(); // Pawn Ticket Number (Column B)
+          let rawDate = row[2] ? new Date(row[2]).toISOString().slice(0,10) : '';
+          let descText = String(row[4] || '').trim(); // Description (Column E)
+          let loanVal = row[10] || 0; // Loan Value (Column K)
+
+          // Clean PTN String (e.g. 115906358-2026-01082* -> 115906358-2026-01082)
+          if (rawPtn && rawPtn !== 'None' && rawPtn !== 'null') {
+            lastValidPtn = rawPtn.replace(/[*]+$/g, '').trim();
+            if (rawDate) lastValidDate = rawDate;
+          }
+
+          // If row has valid PTN or sub-item description
+          if (lastValidPtn && (descText && descText !== 'None')) {
+            extractedItems.push({
+              ptn: lastValidPtn,
+              date: lastValidDate || currentAuditDate,
+              desc: descText,
+              loan: typeof loanVal === 'number' ? loanVal : parseFloat(String(loanVal).replace(/[^0-9.]/g, '')) || 0
+            });
           }
         });
-      }
 
-      const newUploaded = [];
-      extractedRows.forEach(item => {
-        if (!tickets.some(existing => existing.ptn === item.ptn)) {
-          newUploaded.push({ 
-            category: catKey,
-            ptn: item.ptn, 
-            date: currentAuditDate, 
-            desc: item.desc, 
-            loan: typeof item.loan === 'number' ? item.loan : String(item.loan).replace(/[^0-9.]/g, ''), 
-            found: false 
-          });
+        // APPEND & PREVENT EXACT DUPLICATES
+        const uniqueAdded = [];
+        extractedItems.forEach(item => {
+          if (!tickets.some(existing => existing.ptn === item.ptn && existing.desc === item.desc)) {
+            uniqueAdded.push({
+              category: catKey,
+              ptn: item.ptn,
+              date: item.date,
+              desc: item.desc,
+              loan: item.loan,
+              found: false
+            });
+          }
+        });
+
+        if (uniqueAdded.length > 0) {
+          tickets = [...tickets, ...uniqueAdded];
+          syncToFirebase();
+          renderTable();
+          alert(`✓ SUCCESS! Processed ${file.name}.\nAdded ${uniqueAdded.length} items to ${catKey}.\nTotal inventory: ${tickets.length} items.`);
+        } else {
+          alert(`⚠️ No new items found in "${file.name}" (or file was already uploaded).`);
         }
-      });
 
-      if (newUploaded.length > 0) {
-        tickets = [...tickets, ...newUploaded];
-        syncToFirebase();
-        renderTable();
-        alert(`✓ Successfully added ${newUploaded.length} PTNs from ${catKey}! Total list: ${tickets.length}`);
-      } else {
-        alert("⚠️ No new PTN numbers found in file (or all items were already uploaded).");
+      } catch (err) {
+        console.error(err);
+        alert("❌ Error reading file: " + err.message);
+      } finally {
+        $('#loading-overlay').style.display = 'none';
+        e.target.value = '';
       }
-
-    } catch (err) {
-      console.error(err);
-      alert("❌ Error parsing file: " + err.message);
-    }
-
-    e.target.value = '';
+    }, 100);
   }));
 
   window.clearBranchInventory = function() {
