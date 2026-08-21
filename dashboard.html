@@ -319,15 +319,21 @@
     <div class="panel-card">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
         <h3 style="font-size:16px; font-weight:800; color:var(--dark-navy);">🏢 Registered Branch Inventories</h3>
-        <button class="btn-action admin-only" onclick="toggleAddBranch()" style="display:none;">+ Enroll Branch</button>
+        <!-- USER / AUDITOR NEW BRANCH REDIRECT BUTTON -->
+        <button class="btn-action" onclick="toggleUserBranchBox()">+ Open New Branch Audit</button>
       </div>
 
-      <div id="add-branch-box" style="display:none; background:#f8fafc; padding:16px; border-radius:12px; margin-bottom:16px; border:1px solid var(--border);">
+      <!-- NEW BRANCH DIRECT REDIRECT BOX FOR USER -->
+      <div id="user-branch-box" style="display:none; background:#f8fafc; padding:16px; border-radius:12px; margin-bottom:16px; border:1px solid var(--border);">
         <div style="margin-bottom:10px;">
-          <label style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Branch Name</label>
-          <input type="text" id="new-branch-input" class="input-modal" style="border-radius:8px;" placeholder="e.g. ML Catarman Main">
+          <label style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Enter Branch Name</label>
+          <input type="text" id="user-branch-name" class="input-modal" style="border-radius:8px;" placeholder="e.g. ML Liloan 3, ML Catarman">
         </div>
-        <button class="btn-action" onclick="saveNewBranch()" style="width:100%;">Save Branch</button>
+        <div style="margin-bottom:12px;">
+          <label style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Audit Date</label>
+          <input type="date" id="user-audit-date" class="input-modal" style="border-radius:8px;">
+        </div>
+        <button class="btn-action" onclick="launchUserBranchAudit()" style="width:100%;">🔑 Launch Branch Audit (qcl.html)</button>
       </div>
 
       <div id="branches-list">
@@ -446,6 +452,9 @@
   document.addEventListener('DOMContentLoaded', () => {
     const badge = document.getElementById('user-role-badge');
     badge.textContent = currentUserRole === 'admin' ? `👑 ${currentUserName} (ADMIN)` : `👤 ${currentUserName} (AUDITOR)`;
+
+    // Set default date input
+    document.getElementById('user-audit-date').value = new Date().toISOString().slice(0, 10);
 
     if (currentUserRole === 'admin') {
       document.querySelectorAll('.admin-only').forEach(el => {
@@ -572,6 +581,28 @@
     }
   }
 
+  function toggleUserBranchBox() {
+    const box = document.getElementById('user-branch-box');
+    box.style.display = box.style.display === 'none' ? 'block' : 'none';
+  }
+
+  function launchUserBranchAudit() {
+    const bName = document.getElementById('user-branch-name').value.trim();
+    const aDate = document.getElementById('user-audit-date').value;
+
+    if (!bName) {
+      alert('Please enter branch name.');
+      return;
+    }
+
+    const role = localStorage.getItem('ml_userRole') || 'user';
+    localStorage.setItem('ml_activeBranch', bName);
+    localStorage.setItem('vaultledger:remembered-audit-date', aDate);
+
+    // Direct redirect to qcl.html
+    window.location.href = `qcl.html?branch=${encodeURIComponent(bName)}&date=${aDate}&role=${role}`;
+  }
+
   function openEnrollModal() {
     document.getElementById('enroll-modal-overlay').classList.add('show');
   }
@@ -580,14 +611,10 @@
     document.getElementById('enroll-modal-overlay').classList.remove('show');
   }
 
-  function toggleAddBranch() {
-    const box = document.getElementById('add-branch-box');
-    box.style.display = box.style.display === 'none' ? 'block' : 'none';
-  }
-
   function openBranch(branchName) {
     const role = localStorage.getItem('ml_userRole') || 'user';
-    window.location.href = `qcl.html?branch=${encodeURIComponent(branchName)}&role=${role}`;
+    const aDate = new Date().toISOString().slice(0, 10);
+    window.location.href = `qcl.html?branch=${encodeURIComponent(branchName)}&date=${aDate}&role=${role}`;
   }
 
   function logout() {
