@@ -7,7 +7,6 @@
 <link rel="icon" type="image/png" href="logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 
@@ -21,203 +20,67 @@
     --border: #e2e8f0;
     --text: #1e293b;
     --text-muted: #64748b;
-    
     --success: #16a34a;
     --success-bg: #f0fdf4;
     --warning: #d97706;
     --warning-bg: #fffbeb;
-
     --font-sans: 'Inter', system-ui, sans-serif;
     --font-mono: 'Roboto Mono', monospace;
     --radius: 12px;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font-sans); background-color: var(--bg-main); color: var(--text); min-height: 100vh; padding-bottom: 50px; }
 
-  body {
-    font-family: var(--font-sans);
-    background-color: var(--bg-main);
-    color: var(--text);
-    min-height: 100vh;
-    padding-bottom: 50px;
-  }
-
-  /* MODALS */
-  .modal-overlay {
-    position: fixed;
-    top: 0; left: 0; width: 100vw; height: 100vh;
-    background: rgba(15, 23, 42, 0.7);
-    backdrop-filter: blur(6px);
-    display: flex; justify-content: center; align-items: center;
-    z-index: 9999; opacity: 0; pointer-events: none;
-    transition: opacity 0.2s ease;
-  }
-
-  .modal-overlay.show { opacity: 1; pointer-events: auto; }
-
-  .modal-card {
-    background: #fff; border-radius: var(--radius);
-    padding: 24px; width: 90%; max-width: 450px;
-    text-align: center; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
-  }
-
-  header {
-    background: #ffffff;
-    border-bottom: 1px solid var(--border);
-    padding: 14px 24px;
-    position: sticky; top: 0; z-index: 100;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-  }
-
-  .header-wrap {
-    max-width: 1400px; margin: 0 auto;
-    display: flex; justify-content: space-between; align-items: center;
-  }
-
+  header { background: #ffffff; border-bottom: 1px solid var(--border); padding: 14px 24px; position: sticky; top: 0; z-index: 100; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+  .header-wrap { max-width: 1400px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
   .brand-title { font-size: 18px; font-weight: 800; color: var(--primary); display: flex; align-items: center; gap: 8px; }
   
-  .status-badge {
-    padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 700;
-    background: var(--success-bg); color: var(--success); border: 1px solid var(--success);
-  }
-
+  .status-badge { padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; background: var(--success-bg); color: var(--success); border: 1px solid var(--success); }
   .wrap { max-width: 1400px; margin: 24px auto; padding: 0 20px; }
 
-  /* NAVIGATION & ACTIVE INFO BAR */
-  .info-bar {
-    background: var(--card-bg); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 16px 20px;
-    display: flex; justify-content: space-between; align-items: center;
-    margin-bottom: 20px; flex-wrap: wrap; gap: 12px;
-  }
-
+  .info-bar { background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
   .info-title { font-size: 15px; font-weight: 700; color: var(--dark); }
   .info-sub { font-size: 12px; color: var(--text-muted); }
 
-  .btn {
-    font-family: var(--font-sans); font-size: 13px; font-weight: 600;
-    padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border);
-    background: #ffffff; color: var(--text); cursor: pointer;
-    display: inline-flex; align-items: center; gap: 6px; transition: all 0.15s;
-  }
-
+  .btn { font-family: var(--font-sans); font-size: 13px; font-weight: 600; padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border); background: #ffffff; color: var(--text); cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.15s; }
   .btn:hover { background: #f1f5f9; }
   .btn-primary { background: var(--primary); color: #fff; border: none; }
   .btn-primary:hover { background: var(--primary-hover); }
 
-  /* CARDS FOR FILE UPLOADS */
   .grid-uploads { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 20px; }
-
-  .upload-card {
-    background: var(--card-bg); border: 2px dashed var(--border);
-    border-radius: var(--radius); padding: 20px; text-align: center; transition: all 0.2s;
-  }
+  .upload-card { background: var(--card-bg); border: 2px dashed var(--border); border-radius: var(--radius); padding: 20px; text-align: center; transition: all 0.2s; }
   .upload-card.done { border-style: solid; border-color: var(--success); background: var(--success-bg); }
 
-  /* COUNTER CARDS SECTION (BAG-O) */
-  .counter-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 16px;
-    margin-bottom: 20px;
-  }
-
-  .counter-card {
-    background: var(--card-bg);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 16px 20px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.03);
-  }
-
-  .counter-title {
-    font-size: 11px;
-    font-weight: 800;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 4px;
-  }
-
-  .counter-value {
-    font-size: 24px;
-    font-weight: 800;
-    color: var(--dark);
-    font-family: var(--font-mono);
-  }
-
+  .counter-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 20px; }
+  .counter-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 20px; display: flex; flex-direction: column; justify-content: center; box-shadow: 0 1px 3px rgba(0,0,0,0.03); }
+  .counter-title { font-size: 11px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+  .counter-value { font-size: 24px; font-weight: 800; color: var(--dark); font-family: var(--font-mono); }
   .counter-card.found { border-left: 5px solid var(--success); }
   .counter-card.found .counter-value { color: var(--success); }
-
   .counter-card.pending { border-left: 5px solid var(--warning); }
   .counter-card.pending .counter-value { color: var(--warning); }
-
   .counter-card.total { border-left: 5px solid var(--primary); }
   .counter-card.total .counter-value { color: var(--primary); }
 
-  /* PROGRESS BAR */
-  .progress-wrap {
-    background: #e2e8f0;
-    border-radius: 10px;
-    height: 8px;
-    width: 100%;
-    overflow: hidden;
-    margin-top: 8px;
-  }
+  .progress-wrap { background: #e2e8f0; border-radius: 10px; height: 8px; width: 100%; overflow: hidden; margin-top: 8px; }
+  .progress-bar { background: var(--success); height: 100%; width: 0%; transition: width 0.3s ease; }
 
-  .progress-bar {
-    background: var(--success);
-    height: 100%;
-    width: 0%;
-    transition: width 0.3s ease;
-  }
+  .controls-bar { background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
+  .input-search { flex: 1; min-width: 200px; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border); font-size: 13px; outline: none; }
 
-  /* TOOLBAR & SEARCH */
-  .controls-bar {
-    background: var(--card-bg); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 12px;
-    display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px;
-  }
-
-  .input-search {
-    flex: 1; min-width: 200px; padding: 8px 12px; border-radius: 6px;
-    border: 1px solid var(--border); font-size: 13px; outline: none;
-  }
-
-  /* LEDGER TABLE */
-  .table-card {
-    background: var(--card-bg); border: 1px solid var(--border);
-    border-radius: var(--radius); overflow-x: auto;
-  }
-
+  .table-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius); overflow-x: auto; }
   table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; }
   th { background: #f8fafc; padding: 12px 16px; font-weight: 700; border-bottom: 1px solid var(--border); color: var(--text-muted); }
   td { padding: 12px 16px; border-bottom: 1px solid var(--border); vertical-align: middle; }
-
   tr:hover { background: #f1f5f9; cursor: pointer; }
   .ptn { font-family: var(--font-mono); font-weight: 700; color: var(--dark); }
-
   .found-check { width: 20px; height: 20px; accent-color: var(--success); cursor: pointer; }
+
+  .tag-cat { font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; background: #e2e8f0; }
 </style>
 </head>
 <body>
-
-<!-- CAMERA SCANNER MODAL -->
-<div id="cam-modal-overlay" class="modal-overlay">
-  <div class="modal-card" style="max-width: 480px;">
-    <h3>📷 PTN Barcode Scanner</h3>
-    <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">Point camera directly at PTN number/barcode.</p>
-    
-    <div id="qr-reader" style="width:100%; border-radius: 8px; overflow: hidden; background: #000; min-height: 220px;"></div>
-    
-    <div id="cam-scan-result" style="margin-top: 12px; font-weight: 700; font-family: var(--font-mono);"></div>
-
-    <button class="btn" id="close-cam-modal" style="margin-top: 16px; width: 100%;">Close Camera</button>
-  </div>
-</div>
 
 <header>
   <div class="header-wrap">
@@ -230,7 +93,6 @@
 </header>
 
 <div class="wrap">
-
   <div class="info-bar">
     <div>
       <button class="btn" onclick="window.location.href='dashboard.html'">⬅ Back to Dashboard</button>
@@ -242,55 +104,49 @@
   </div>
 
   <div class="grid-uploads">
-    <div class="upload-card" data-cat="prenda">
+    <div class="upload-card" id="card-prenda">
       <h4 style="color:var(--primary);">Prenda</h4>
-      <p style="font-size: 11px; color: var(--text-muted); margin: 6px 0 12px;">Upload Excel/PDF Report</p>
+      <p style="font-size: 11px; color: var(--text-muted); margin: 6px 0 12px;">Upload Excel Report</p>
       <button class="btn cat-upload-btn" data-cat="prenda">Choose File</button>
-      <input type="file" class="cat-file-input" data-cat="prenda" accept=".xlsx,.xls,.csv,application/pdf" style="display:none;">
+      <input type="file" class="cat-file-input" data-cat="prenda" accept=".xlsx,.xls,.csv" style="display:none;">
     </div>
-    <div class="upload-card" data-cat="terms">
+    <div class="upload-card" id="card-terms">
       <h4 style="color:var(--primary);">Terms Extended</h4>
-      <p style="font-size: 11px; color: var(--text-muted); margin: 6px 0 12px;">Upload Excel/PDF Report</p>
+      <p style="font-size: 11px; color: var(--text-muted); margin: 6px 0 12px;">Upload Excel Report</p>
       <button class="btn cat-upload-btn" data-cat="terms">Choose File</button>
-      <input type="file" class="cat-file-input" data-cat="terms" accept=".xlsx,.xls,.csv,application/pdf" style="display:none;">
+      <input type="file" class="cat-file-input" data-cat="terms" accept=".xlsx,.xls,.csv" style="display:none;">
     </div>
-    <div class="upload-card" data-cat="reappraisal">
-      <h4 style="color:var(--primary);">Re-appraisal</h4>
-      <p style="font-size: 11px; color: var(--text-muted); margin: 6px 0 12px;">Upload Excel/PDF Report</p>
+    <div class="upload-card" id="card-reappraisal">
+      <h4 style="color:var(--primary);">Re-appraisal (REAPP)</h4>
+      <p style="font-size: 11px; color: var(--text-muted); margin: 6px 0 12px;">Upload Excel Report</p>
       <button class="btn cat-upload-btn" data-cat="reappraisal">Choose File</button>
-      <input type="file" class="cat-file-input" data-cat="reappraisal" accept=".xlsx,.xls,.csv,application/pdf" style="display:none;">
+      <input type="file" class="cat-file-input" data-cat="reappraisal" accept=".xlsx,.xls,.csv" style="display:none;">
     </div>
   </div>
 
-  <!-- REAL-TIME COUNTER DISPLAY (BAG-O) -->
   <div class="counter-grid">
     <div class="counter-card total">
       <div class="counter-title">📦 Total Items / PTNs</div>
       <div class="counter-value" id="count-total">0</div>
     </div>
-
     <div class="counter-card found">
       <div class="counter-title">✅ Found Items</div>
       <div class="counter-value" id="count-found">0</div>
     </div>
-
     <div class="counter-card pending">
       <div class="counter-title">⏳ Pending Items</div>
       <div class="counter-value" id="count-pending">0</div>
     </div>
-
     <div class="counter-card">
       <div class="counter-title">📊 Audit Progress</div>
       <div class="counter-value" id="count-progress" style="font-size: 20px;">0%</div>
-      <div class="progress-wrap">
-        <div class="progress-bar" id="progress-bar-fill"></div>
-      </div>
+      <div class="progress-wrap"><div class="progress-bar" id="progress-bar-fill"></div></div>
     </div>
   </div>
 
   <div class="controls-bar">
     <input type="text" id="search" class="input-search" placeholder="🔎 Search PTN or item description...">
-    <button class="btn btn-primary" id="open-cam-btn">📷 Scan PTN with Camera</button>
+    <button class="btn btn-primary" id="clear-all-btn" style="background:#0f172a;" onclick="clearBranchInventory()">🗑️ Reset Branch Audit Data</button>
   </div>
 
   <div class="table-card">
@@ -298,6 +154,7 @@
       <thead>
         <tr>
           <th>#</th>
+          <th>Category</th>
           <th>PTN</th>
           <th>Date</th>
           <th>Description</th>
@@ -306,14 +163,12 @@
         </tr>
       </thead>
       <tbody id="ledger-body">
-        <tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Upload files to display inventory.</td></tr>
+        <tr><td colspan="7" style="text-align: center; color: var(--text-muted);">Upload files to display inventory.</td></tr>
       </tbody>
     </table>
   </div>
-
 </div>
 
-<!-- FIREBASE REALTIME ENGINE -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
@@ -335,74 +190,68 @@
   let currentAuditDate = "";
   let currentUserRole = "";
   let tickets = [];
-  let html5QrCode = null;
 
   const $ = sel => document.querySelector(sel);
   const $$ = sel => Array.from(document.querySelectorAll(sel));
 
   function slugBranch(name){ return name.trim().toLowerCase().replace(/[^a-z0-9]+/g,'-') || 'default'; }
 
-  // LOAD SESSION PARAMETERS
   window.addEventListener('DOMContentLoaded', () => {
     const urlParams = new URLSearchParams(window.location.search);
     currentBranch = urlParams.get('branch') || localStorage.getItem('ml_activeBranch') || 'ML Branch';
     currentAuditDate = urlParams.get('date') || localStorage.getItem('vaultledger:remembered-audit-date') || new Date().toISOString().slice(0,10);
     currentUserRole = urlParams.get('role') || localStorage.getItem('ml_userRole') || 'user';
 
-    const roleBadgeText = currentUserRole === 'admin' ? '(ADMIN)' : '(AUDITOR)';
-    $('#branch-display').textContent = `🏢 ${currentBranch} ${roleBadgeText}`;
+    $('#branch-display').textContent = `🏢 ${currentBranch}`;
     $('#date-display').textContent = `Audit Date: ${currentAuditDate}`;
+
+    // Load local cache instantly before Firebase loads
+    const cached = localStorage.getItem(`qcl_data_${slugBranch(currentBranch)}`);
+    if (cached) {
+      tickets = JSON.parse(cached);
+      renderTable();
+    }
 
     listenFirebaseStore();
   });
 
-  // FIREBASE REALTIME LISTENER WITH "X PTNs SYNCED" NOTIFICATION
   function listenFirebaseStore() {
     const branchSlug = slugBranch(currentBranch);
     onValue(ref(db, `qclStore/${branchSlug}`), (snapshot) => {
       const val = snapshot.val();
       if (val && val.tickets) {
         tickets = val.tickets;
+        localStorage.setItem(`qcl_data_${branchSlug}`, JSON.stringify(tickets));
         renderTable();
-
-        const count = tickets.length;
-        const msg = `✓ ${count} PTNs synced`;
-        
-        const statusTag = $('#network-status-tag');
-        if (statusTag) statusTag.textContent = msg;
-
-        if (val.lastCategory) {
-          const card = document.querySelector(`.upload-card[data-cat="${val.lastCategory}"]`);
-          if (card) {
-            card.classList.add('done');
-            let pEl = card.querySelector('.sync-msg');
-            if (!pEl) {
-              pEl = document.createElement('p');
-              pEl.className = 'sync-msg';
-              pEl.style.fontSize = '12px';
-              pEl.style.fontWeight = 'bold';
-              pEl.style.color = 'var(--success)';
-              pEl.style.marginTop = '8px';
-              card.appendChild(pEl);
-            }
-            pEl.textContent = msg;
-          }
-        }
+        $('#network-status-tag').textContent = `✓ ${tickets.length} PTNs Synced`;
       }
     });
   }
 
-  function syncToFirebase(categoryKey) {
+  function syncToFirebase() {
     if (!currentBranch) return;
     const branchSlug = slugBranch(currentBranch);
+    
+    // Save to Local Storage & Firebase Realtime DB
+    localStorage.setItem(`qcl_data_${branchSlug}`, JSON.stringify(tickets));
+    
+    const foundCount = tickets.filter(t => t.found).length;
     set(ref(db, `qclStore/${branchSlug}`), { 
-      tickets, 
-      lastCategory: categoryKey || '',
+      tickets: tickets,
+      totalCount: tickets.length,
+      foundCount: foundCount,
       lastUpdated: new Date().toISOString() 
+    });
+
+    // Also update Branch summary in Firebase for Dashboard view
+    set(ref(db, `systemBranchesSummary/${branchSlug}`), {
+      branchName: currentBranch,
+      totalPTN: tickets.length,
+      foundPTN: foundCount,
+      lastUpdated: new Date().toISOString()
     });
   }
 
-  // UPDATE COUNTER CARDS & PROGRESS
   function updateCounters() {
     const total = tickets.length;
     const found = tickets.filter(t => t.found).length;
@@ -421,7 +270,12 @@
     const query = $('#search').value.toLowerCase().trim();
     body.innerHTML = '';
 
-    updateCounters(); // Refresh Counters
+    updateCounters();
+
+    if(tickets.length === 0) {
+      body.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">No inventory records yet. Upload files above.</td></tr>`;
+      return;
+    }
 
     tickets.forEach((t, i) => {
       if (query && !t.ptn.toLowerCase().includes(query) && !t.desc.toLowerCase().includes(query)) return;
@@ -429,6 +283,7 @@
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>${i + 1}</td>
+        <td><span class="tag-cat">${t.category || 'PRENDA'}</span></td>
         <td class="ptn">${t.ptn}</td>
         <td>${t.date || '—'}</td>
         <td>${t.desc || '—'}</td>
@@ -447,14 +302,14 @@
     });
   }
 
-  // FILE UPLOAD CONTROLS
+  // FILE UPLOADS: APPEND MODE (DILI MAPANAS ANG PREVIOUS UPLOADS)
   $$('.cat-upload-btn').forEach(btn => btn.addEventListener('click', () => {
     document.querySelector(`.cat-file-input[data-cat="${btn.dataset.cat}"]`).click();
   }));
 
   $$('.cat-file-input').forEach(inp => inp.addEventListener('change', async (e) => {
     const file = e.target.files[0];
-    const catKey = e.target.dataset.cat;
+    const catKey = e.target.dataset.cat.toUpperCase();
     if (!file) return;
 
     const buf = await file.arrayBuffer();
@@ -462,57 +317,42 @@
     const sheet = wb.Sheets[wb.SheetNames[0]];
     const rows = XLSX.utils.sheet_to_json(sheet, {header:1});
 
-    const newTickets = [];
+    const newUploaded = [];
     rows.forEach(r => {
       if (r[0] && String(r[0]).match(/\d+/)) {
-        newTickets.push({ 
-          ptn: String(r[0]).trim(), 
-          date: currentAuditDate, 
-          desc: r[1] || 'Jewelry', 
-          loan: r[2] || 0, 
-          found: false 
-        });
+        const ptnVal = String(r[0]).trim();
+        // Prevent exact duplicates
+        if (!tickets.some(existing => existing.ptn === ptnVal)) {
+          newUploaded.push({ 
+            category: catKey,
+            ptn: ptnVal, 
+            date: currentAuditDate, 
+            desc: r[1] || 'Jewelry/Item', 
+            loan: r[2] || 0, 
+            found: false 
+          });
+        }
       }
     });
 
-    if (newTickets.length > 0) {
-      tickets = newTickets;
-      syncToFirebase(catKey);
+    if (newUploaded.length > 0) {
+      tickets = [...tickets, ...newUploaded]; // Append new records to existing list
+      syncToFirebase();
       renderTable();
-      alert(`✓ Success! ${newTickets.length} PTNs synced to cloud database.`);
+      alert(`✓ Successfully added ${newUploaded.length} PTNs from ${catKey}! Total list: ${tickets.length}`);
     } else {
-      alert("⚠️ No valid PTN numbers found in uploaded file.");
+      alert("⚠️ No new PTN numbers found (or items were already uploaded).");
     }
+    e.target.value = '';
   }));
 
-  // CAMERA SCANNER LOGIC
-  $('#open-cam-btn').addEventListener('click', () => {
-    $('#cam-modal-overlay').classList.add('show');
-    if (!html5QrCode) html5QrCode = new Html5Qrcode("qr-reader");
-
-    html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (text) => {
-      const match = text.match(/\d{5,}-\d+/) || text.match(/\d+/);
-      if (match) {
-        const scannedPTN = match[0];
-        const idx = tickets.findIndex(t => t.ptn.includes(scannedPTN));
-        if (idx !== -1) {
-          tickets[idx].found = true;
-          syncToFirebase();
-          renderTable();
-          $('#cam-scan-result').style.color = "var(--success)";
-          $('#cam-scan-result').textContent = `✓ MATCHED: ${scannedPTN}`;
-        } else {
-          $('#cam-scan-result').style.color = "var(--primary)";
-          $('#cam-scan-result').textContent = `❌ NOT FOUND: ${scannedPTN}`;
-        }
-      }
-    }).catch(err => alert('Camera access error. Please grant permission.'));
-  });
-
-  $('#close-cam-modal').addEventListener('click', () => {
-    if (html5QrCode) html5QrCode.stop();
-    $('#cam-modal-overlay').classList.remove('show');
-  });
+  window.clearBranchInventory = function() {
+    if (confirm(`Are you sure you want to reset all audit records for "${currentBranch}"?`)) {
+      tickets = [];
+      syncToFirebase();
+      renderTable();
+    }
+  };
 
   $('#search').addEventListener('input', renderTable);
 </script>
