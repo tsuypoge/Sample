@@ -7,6 +7,8 @@
 <link rel="icon" type="image/png" href="logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet">
+<!-- LIBRARIES FOR EXCEL, PDF & BARCODE SCANNER -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 
@@ -106,21 +108,21 @@
   <div class="grid-uploads">
     <div class="upload-card" id="card-prenda">
       <h4 style="color:var(--primary);">Prenda</h4>
-      <p style="font-size: 11px; color: var(--text-muted); margin: 6px 0 12px;">Upload Excel Report</p>
+      <p style="font-size: 11px; color: var(--text-muted); margin: 6px 0 12px;">Upload Excel/CSV/PDF</p>
       <button class="btn cat-upload-btn" data-cat="prenda">Choose File</button>
-      <input type="file" class="cat-file-input" data-cat="prenda" accept=".xlsx,.xls,.csv" style="display:none;">
+      <input type="file" class="cat-file-input" data-cat="prenda" accept=".xlsx,.xls,.csv,.pdf" style="display:none;">
     </div>
     <div class="upload-card" id="card-terms">
       <h4 style="color:var(--primary);">Terms Extended</h4>
-      <p style="font-size: 11px; color: var(--text-muted); margin: 6px 0 12px;">Upload Excel Report</p>
+      <p style="font-size: 11px; color: var(--text-muted); margin: 6px 0 12px;">Upload Excel/CSV/PDF</p>
       <button class="btn cat-upload-btn" data-cat="terms">Choose File</button>
-      <input type="file" class="cat-file-input" data-cat="terms" accept=".xlsx,.xls,.csv" style="display:none;">
+      <input type="file" class="cat-file-input" data-cat="terms" accept=".xlsx,.xls,.csv,.pdf" style="display:none;">
     </div>
     <div class="upload-card" id="card-reappraisal">
       <h4 style="color:var(--primary);">Re-appraisal (REAPP)</h4>
-      <p style="font-size: 11px; color: var(--text-muted); margin: 6px 0 12px;">Upload Excel Report</p>
+      <p style="font-size: 11px; color: var(--text-muted); margin: 6px 0 12px;">Upload Excel/CSV/PDF</p>
       <button class="btn cat-upload-btn" data-cat="reappraisal">Choose File</button>
-      <input type="file" class="cat-file-input" data-cat="reappraisal" accept=".xlsx,.xls,.csv" style="display:none;">
+      <input type="file" class="cat-file-input" data-cat="reappraisal" accept=".xlsx,.xls,.csv,.pdf" style="display:none;">
     </div>
   </div>
 
@@ -186,6 +188,10 @@
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
 
+  if (typeof pdfjsLib !== 'undefined') {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  }
+
   let currentBranch = "";
   let currentAuditDate = "";
   let currentUserRole = "";
@@ -205,7 +211,6 @@
     $('#branch-display').textContent = `🏢 ${currentBranch}`;
     $('#date-display').textContent = `Audit Date: ${currentAuditDate}`;
 
-    // Load local cache instantly before Firebase loads
     const cached = localStorage.getItem(`qcl_data_${slugBranch(currentBranch)}`);
     if (cached) {
       tickets = JSON.parse(cached);
@@ -232,23 +237,15 @@
     if (!currentBranch) return;
     const branchSlug = slugBranch(currentBranch);
     
-    // Save to Local Storage & Firebase Realtime DB
     localStorage.setItem(`qcl_data_${branchSlug}`, JSON.stringify(tickets));
     
     const foundCount = tickets.filter(t => t.found).length;
     set(ref(db, `qclStore/${branchSlug}`), { 
+      branchName: currentBranch,
       tickets: tickets,
       totalCount: tickets.length,
       foundCount: foundCount,
       lastUpdated: new Date().toISOString() 
-    });
-
-    // Also update Branch summary in Firebase for Dashboard view
-    set(ref(db, `systemBranchesSummary/${branchSlug}`), {
-      branchName: currentBranch,
-      totalPTN: tickets.length,
-      foundPTN: foundCount,
-      lastUpdated: new Date().toISOString()
     });
   }
 
@@ -302,7 +299,7 @@
     });
   }
 
-  // FILE UPLOADS: APPEND MODE (DILI MAPANAS ANG PREVIOUS UPLOADS)
+  // SMART UPLOAD ENGINE (HANDLES EXCEL, CSV & PDF)
   $$('.cat-upload-btn').forEach(btn => btn.addEventListener('click', () => {
     document.querySelector(`.cat-file-input[data-cat="${btn.dataset.cat}"]`).click();
   }));
@@ -312,37 +309,80 @@
     const catKey = e.target.dataset.cat.toUpperCase();
     if (!file) return;
 
-    const buf = await file.arrayBuffer();
-    const wb = XLSX.read(buf, {type:'array'});
-    const sheet = wb.Sheets[wb.SheetNames[0]];
-    const rows = XLSX.utils.sheet_to_json(sheet, {header:1});
+    try {
+      let extractedRows = [];
 
-    const newUploaded = [];
-    rows.forEach(r => {
-      if (r[0] && String(r[0]).match(/\d+/)) {
-        const ptnVal = String(r[0]).trim();
-        // Prevent exact duplicates
-        if (!tickets.some(existing => existing.ptn === ptnVal)) {
+      if (file.name.toLowerCase().endsWith('.pdf')) {
+        // PDF PARSER
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        let fullText = "";
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const textContent = await page.getTextContent();
+          fullText += textContent.items.map(item => item.str).join(" ") + "\n";
+        }
+        
+        // Find PTNs in PDF text using Regex Pattern (Matches PTN numbers e.g. 102001-12345 o numeric PTNs)
+        const ptnMatches = fullText.match(/\b\d{5,}(?:-\d+)?\b/g) || [];
+        ptnMatches.forEach(ptnStr => {
+          extractedRows.push({ ptn: ptnStr, desc: 'PDF Item', loan: 0 });
+        });
+
+      } else {
+        // EXCEL / CSV PARSER
+        const buf = await file.arrayBuffer();
+        const wb = XLSX.read(buf, {type:'array'});
+        const sheet = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(sheet, {header:1});
+
+        rows.forEach(r => {
+          if (!r || r.length === 0) return;
+          
+          // SCAN ALL COLUMNS TO FIND PTN
+          for (let col = 0; col < r.length; col++) {
+            const val = String(r[col] || '').trim();
+            // Matching PTN (digits o formatted numbers)
+            if (val.match(/^\d{5,}(-\d+)?$/) || val.match(/^[A-Z0-9]{8,12}$/)) {
+              extractedRows.push({
+                ptn: val,
+                desc: r[col + 1] || r[col + 2] || 'Jewelry/Item',
+                loan: r[col + 2] || r[col + 3] || 0
+              });
+              break; 
+            }
+          }
+        });
+      }
+
+      const newUploaded = [];
+      extractedRows.forEach(item => {
+        if (!tickets.some(existing => existing.ptn === item.ptn)) {
           newUploaded.push({ 
             category: catKey,
-            ptn: ptnVal, 
+            ptn: item.ptn, 
             date: currentAuditDate, 
-            desc: r[1] || 'Jewelry/Item', 
-            loan: r[2] || 0, 
+            desc: item.desc, 
+            loan: typeof item.loan === 'number' ? item.loan : String(item.loan).replace(/[^0-9.]/g, ''), 
             found: false 
           });
         }
-      }
-    });
+      });
 
-    if (newUploaded.length > 0) {
-      tickets = [...tickets, ...newUploaded]; // Append new records to existing list
-      syncToFirebase();
-      renderTable();
-      alert(`✓ Successfully added ${newUploaded.length} PTNs from ${catKey}! Total list: ${tickets.length}`);
-    } else {
-      alert("⚠️ No new PTN numbers found (or items were already uploaded).");
+      if (newUploaded.length > 0) {
+        tickets = [...tickets, ...newUploaded];
+        syncToFirebase();
+        renderTable();
+        alert(`✓ Successfully added ${newUploaded.length} PTNs from ${catKey}! Total list: ${tickets.length}`);
+      } else {
+        alert("⚠️ No new PTN numbers found in file (or all items were already uploaded).");
+      }
+
+    } catch (err) {
+      console.error(err);
+      alert("❌ Error parsing file: " + err.message);
     }
+
     e.target.value = '';
   }));
 
