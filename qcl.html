@@ -114,6 +114,67 @@
   }
   .upload-card.done { border-style: solid; border-color: var(--success); background: var(--success-bg); }
 
+  /* COUNTER CARDS SECTION (BAG-O) */
+  .counter-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  .counter-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+  }
+
+  .counter-title {
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+  }
+
+  .counter-value {
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--dark);
+    font-family: var(--font-mono);
+  }
+
+  .counter-card.found { border-left: 5px solid var(--success); }
+  .counter-card.found .counter-value { color: var(--success); }
+
+  .counter-card.pending { border-left: 5px solid var(--warning); }
+  .counter-card.pending .counter-value { color: var(--warning); }
+
+  .counter-card.total { border-left: 5px solid var(--primary); }
+  .counter-card.total .counter-value { color: var(--primary); }
+
+  /* PROGRESS BAR */
+  .progress-wrap {
+    background: #e2e8f0;
+    border-radius: 10px;
+    height: 8px;
+    width: 100%;
+    overflow: hidden;
+    margin-top: 8px;
+  }
+
+  .progress-bar {
+    background: var(--success);
+    height: 100%;
+    width: 0%;
+    transition: width 0.3s ease;
+  }
+
   /* TOOLBAR & SEARCH */
   .controls-bar {
     background: var(--card-bg); border: 1px solid var(--border);
@@ -198,6 +259,32 @@
       <p style="font-size: 11px; color: var(--text-muted); margin: 6px 0 12px;">Upload Excel/PDF Report</p>
       <button class="btn cat-upload-btn" data-cat="reappraisal">Choose File</button>
       <input type="file" class="cat-file-input" data-cat="reappraisal" accept=".xlsx,.xls,.csv,application/pdf" style="display:none;">
+    </div>
+  </div>
+
+  <!-- REAL-TIME COUNTER DISPLAY (BAG-O) -->
+  <div class="counter-grid">
+    <div class="counter-card total">
+      <div class="counter-title">📦 Total Items / PTNs</div>
+      <div class="counter-value" id="count-total">0</div>
+    </div>
+
+    <div class="counter-card found">
+      <div class="counter-title">✅ Found Items</div>
+      <div class="counter-value" id="count-found">0</div>
+    </div>
+
+    <div class="counter-card pending">
+      <div class="counter-title">⏳ Pending Items</div>
+      <div class="counter-value" id="count-pending">0</div>
+    </div>
+
+    <div class="counter-card">
+      <div class="counter-title">📊 Audit Progress</div>
+      <div class="counter-value" id="count-progress" style="font-size: 20px;">0%</div>
+      <div class="progress-wrap">
+        <div class="progress-bar" id="progress-bar-fill"></div>
+      </div>
     </div>
   </div>
 
@@ -315,10 +402,26 @@
     });
   }
 
+  // UPDATE COUNTER CARDS & PROGRESS
+  function updateCounters() {
+    const total = tickets.length;
+    const found = tickets.filter(t => t.found).length;
+    const pending = total - found;
+    const percentage = total > 0 ? Math.round((found / total) * 100) : 0;
+
+    $('#count-total').textContent = total.toLocaleString();
+    $('#count-found').textContent = found.toLocaleString();
+    $('#count-pending').textContent = pending.toLocaleString();
+    $('#count-progress').textContent = `${percentage}%`;
+    $('#progress-bar-fill').style.width = `${percentage}%`;
+  }
+
   function renderTable() {
     const body = $('#ledger-body');
     const query = $('#search').value.toLowerCase().trim();
     body.innerHTML = '';
+
+    updateCounters(); // Refresh Counters
 
     tickets.forEach((t, i) => {
       if (query && !t.ptn.toLowerCase().includes(query) && !t.desc.toLowerCase().includes(query)) return;
