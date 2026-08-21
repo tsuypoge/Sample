@@ -3,185 +3,335 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>M Lhuillier — QCL Inventory Portal</title>
+<title>M Lhuillier — QCL Inventory Report</title>
 <link rel="icon" type="image/png" href="logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet">
-
-<!-- EXCEL & PDF LIBRARIES -->
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 
 <style>
   :root {
     --primary: #cc0000;
-    --primary-hover: #a00000;
-    --dark: #0f172a;
-    --bg-main: #f8fafc;
-    --card-bg: #ffffff;
-    --border: #e2e8f0;
-    --text: #1e293b;
+    --primary-dark: #990000;
+    --bg-red: #bc0000;
+    --bg-gradient: linear-gradient(135deg, #d30000 0%, #900000 100%);
+    --gold: #d4af37;
+    
+    --panel-bg: #ffffff;
+    --panel-2: #fffdfd;
+    --text-main: #1e293b;
     --text-muted: #64748b;
-    --success: #16a34a;
-    --success-bg: #f0fdf4;
-    --warning: #d97706;
-    --warning-bg: #fffbeb;
-    --font-sans: 'Inter', system-ui, sans-serif;
+    --border: #e2e8f0;
+    --border-subtle: #f1f5f9;
+
+    --match: #16a34a;
+    --match-bg: #f0fdf4;
+    --mismatch: #dc2626;
+    --mismatch-bg: #fef2f2;
+    --pending: #ea580c;
+    --pending-bg: #fff7ed;
+
+    --font-sans: 'Roboto', system-ui, -apple-system, sans-serif;
     --font-mono: 'Roboto Mono', monospace;
-    --radius: 12px;
+
+    --shadow-card: 0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    --shadow-sm: 0 2px 4px rgba(0,0,0,0.05);
+    
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 18px;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: var(--font-sans); background-color: var(--bg-main); color: var(--text); min-height: 100vh; padding-bottom: 50px; }
 
-  header { background: #ffffff; border-bottom: 1px solid var(--border); padding: 14px 24px; position: sticky; top: 0; z-index: 100; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-  .header-wrap { max-width: 1400px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
-  .brand-title { font-size: 18px; font-weight: 800; color: var(--primary); display: flex; align-items: center; gap: 8px; }
-  
-  .status-badge { padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; background: var(--success-bg); color: var(--success); border: 1px solid var(--success); }
-  .wrap { max-width: 1400px; margin: 24px auto; padding: 0 20px; }
-
-  .info-bar { background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
-  .info-title { font-size: 15px; font-weight: 700; color: var(--dark); }
-  .info-sub { font-size: 12px; color: var(--text-muted); }
-
-  .btn { font-family: var(--font-sans); font-size: 13px; font-weight: 600; padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border); background: #ffffff; color: var(--text); cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.15s; }
-  .btn:hover { background: #f1f5f9; }
-  .btn-primary { background: var(--primary); color: #fff; border: none; }
-  .btn-primary:hover { background: var(--primary-hover); }
-
-  .grid-uploads { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 20px; }
-  .upload-card { background: var(--card-bg); border: 2px dashed var(--border); border-radius: var(--radius); padding: 20px; text-align: center; transition: all 0.2s; }
-
-  .counter-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 20px; }
-  .counter-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 20px; display: flex; flex-direction: column; justify-content: center; box-shadow: 0 1px 3px rgba(0,0,0,0.03); }
-  .counter-title { font-size: 11px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
-  .counter-value { font-size: 24px; font-weight: 800; color: var(--dark); font-family: var(--font-mono); }
-  .counter-card.found { border-left: 5px solid var(--success); }
-  .counter-card.found .counter-value { color: var(--success); }
-  .counter-card.pending { border-left: 5px solid var(--warning); }
-  .counter-card.pending .counter-value { color: var(--warning); }
-  .counter-card.total { border-left: 5px solid var(--primary); }
-  .counter-card.total .counter-value { color: var(--primary); }
-
-  .progress-wrap { background: #e2e8f0; border-radius: 10px; height: 8px; width: 100%; overflow: hidden; margin-top: 8px; }
-  .progress-bar { background: var(--success); height: 100%; width: 0%; transition: width 0.3s ease; }
-
-  .controls-bar { background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
-  .input-search { flex: 1; min-width: 200px; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border); font-size: 13px; outline: none; }
-
-  .table-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius); overflow-x: auto; }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; }
-  th { background: #f8fafc; padding: 12px 16px; font-weight: 700; border-bottom: 1px solid var(--border); color: var(--text-muted); }
-  td { padding: 12px 16px; border-bottom: 1px solid var(--border); vertical-align: middle; }
-  tr:hover { background: #f1f5f9; cursor: pointer; }
-  .ptn { font-family: var(--font-mono); font-weight: 700; color: var(--dark); }
-  .found-check { width: 20px; height: 20px; accent-color: var(--success); cursor: pointer; }
-
-  .tag-cat { font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; background: #e2e8f0; }
-
-  #loading-overlay {
-    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-    background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(4px);
-    display: flex; flex-direction: column; justify-content: center; align-items: center;
-    color: #fff; font-weight: 700; z-index: 10000; display: none;
+  body {
+    font-family: var(--font-sans);
+    background: var(--bg-gradient);
+    background-attachment: fixed;
+    color: var(--text-main);
+    min-height: 100vh;
+    padding-bottom: 60px;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
   }
+
+  ::selection { background: var(--primary); color: #ffffff; }
+
+  .offline-modal-overlay {
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(8px);
+    display: flex; justify-content: center; align-items: center;
+    z-index: 10000; opacity: 0; pointer-events: none;
+    transition: opacity 0.25s ease-in-out;
+  }
+
+  .offline-modal-overlay.show { opacity: 1; pointer-events: auto; }
+
+  .offline-modal-card {
+    background: #ffffff; border-radius: var(--radius-lg);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); padding: 32px 28px;
+    max-width: 420px; width: 90%; text-align: center; border-top: 6px solid #dc2626;
+    transform: scale(0.9); transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+
+  .offline-modal-overlay.show .offline-modal-card { transform: scale(1); }
+
+  header {
+    background: #ffffff; color: var(--text-main); padding: 16px 32px;
+    border-bottom: 3px solid var(--gold); box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+  }
+
+  .header-content {
+    max-width: 1600px; margin: 0 auto; display: flex;
+    align-items: center; justify-content: space-between;
+  }
+
+  .header-title-box { display: flex; align-items: center; gap: 14px; }
+  .header-logo-img { height: 48px; width: auto; object-fit: contain; }
+  h1 { font-size: 20px; font-weight: 800; color: var(--primary); letter-spacing: -0.02em; }
+  .header-sub { font-size: 12px; color: var(--text-muted); font-weight: 500; margin-top: 1px; }
+
+  .wrap { max-width: 1600px; margin: 28px auto; padding: 0 24px; width: 100%; }
+
+  .btn {
+    font-family: var(--font-sans); font-size: 13px; font-weight: 700;
+    background: #ffffff; color: var(--primary); border: none; padding: 10px 18px;
+    border-radius: var(--radius-sm); cursor: pointer; transition: all 0.2s;
+    display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  }
+
+  .btn:hover { background: #f8fafc; transform: translateY(-1px); box-shadow: 0 6px 16px rgba(0,0,0,0.2); }
+  .btn.ghost { background: rgba(255,255,255,0.15); color: #ffffff; border: 1px solid rgba(255,255,255,0.3); box-shadow: none; }
+  .btn.ghost:hover { background: #ffffff; color: var(--primary); border-color: #ffffff; }
+  .btn.small { padding: 7px 13px; font-size: 12px; }
+  .btn-dashboard { background: #1e293b; color: #ffffff; }
+  .btn-dashboard:hover { background: #0f172a; color: #ffffff; }
+
+  input[type=file] { display: none; }
+
+  .cat-uploads { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 20px; }
+  .cat-upload-card {
+    flex: 1; min-width: 240px; background: var(--panel-bg); border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card); padding: 24px 20px; text-align: center;
+    border: 2px dashed var(--border); transition: all 0.2s;
+  }
+  .cat-upload-card.done { border-style: solid; border-color: var(--match); background: #f0fdf4; }
+  .cat-upload-card h3 { font-size: 18px; font-weight: 800; color: var(--primary); margin-bottom: 4px; }
+  .cat-upload-card .cat-sub { font-size: 12px; color: var(--text-muted); margin-bottom: 16px; }
+  .cat-upload-card .cat-status { margin-top: 12px; font-size: 12px; color: var(--text-muted); font-weight: 600; }
+
+  #status-line { margin-top: 14px; font-size: 12.5px; color: #ffffff; text-align: center; font-weight: 600; text-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+
+  .sticky-controls-wrapper {
+    position: sticky; top: 0; z-index: 60; background: rgba(144, 0, 0, 0.95);
+    backdrop-filter: blur(10px); padding: 10px 0; margin-top: 20px; border-radius: var(--radius-md);
+  }
+
+  .tabs { display: none; gap: 10px; flex-wrap: wrap; padding: 0 10px 10px 10px; }
+  .tabs.show { display: flex; }
+  .tab {
+    flex: 1; min-width: 150px; background: rgba(255, 255, 255, 0.9);
+    border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+    padding: 10px 14px; cursor: pointer; transition: all 0.2s; opacity: 0.7;
+  }
+  .tab.enabled { cursor: pointer; opacity: 1; }
+  .tab.active { background: #ffffff; opacity: 1; border-color: var(--primary); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+  .tab .t-name { font-size: 15px; font-weight: 800; color: var(--primary); }
+  .tab .t-count { font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 700; margin-top: 2px; }
+
+  .toolbar {
+    display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+    background: var(--panel-bg); padding: 12px; border-radius: var(--radius-md);
+    box-shadow: var(--shadow-card); margin: 0 10px;
+  }
+  #search {
+    flex: 1; min-width: 200px; padding: 10px 14px; border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm); font-family: var(--font-sans); font-size: 13px; outline: none;
+  }
+  select {
+    padding: 10px 14px; border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+    font-family: var(--font-sans); font-size: 12.5px; font-weight: 700; outline: none;
+  }
+
+  #dashboard { display: none; margin-top: 24px; }
+  #dashboard.show { display: block; }
+
+  .stats-row { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 20px; }
+  .stat-chip {
+    flex: 1; min-width: 140px; background: var(--panel-bg); border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card); padding: 16px 20px;
+  }
+  .stat-chip .num { font-size: 26px; font-weight: 800; font-family: var(--font-mono); color: var(--primary); }
+  .stat-chip .lab { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); font-weight: 800; margin-top: 2px; }
+  .stat-chip.match .num { color: var(--match); }
+  .stat-chip.pending .num { color: var(--pending); }
+
+  .ledger {
+    background: var(--panel-bg); border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card); overflow-x: auto; padding: 8px; width: 100%;
+  }
+  
+  table { width: 100%; min-width: 1000px; border-collapse: collapse; font-size: 13.5px; }
+  thead th {
+    background: #ffffff; font-size: 11px; text-transform: uppercase; font-weight: 800;
+    color: var(--primary); text-align: left; padding: 16px 14px; border-bottom: 2px solid var(--border);
+    white-space: nowrap; position: sticky; top: 0; z-index: 10;
+  }
+  
+  tbody td { padding: 0 14px; border-bottom: 1px solid #f8fafc; vertical-align: middle; height: 40px; }
+  tbody tr { transition: background-color 0.15s ease-in-out; cursor: pointer; }
+  tbody tr:hover { background-color: #fef2f2 !important; }
+
+  .ptn { font-size: 14px; font-weight: 700; font-family: var(--font-mono); color: var(--text-main); white-space: nowrap; }
+  .ptn .flag { color: var(--primary); }
+  .date { font-size: 13px; font-family: var(--font-mono); color: var(--text-muted); white-space: nowrap; }
+  
+  .item-row-container { display: flex; flex-direction: column; gap: 6px; }
+  .item-single-row { display: flex; align-items: center; min-height: 26px; }
+  .item-pcs { width: 70px; font-size: 13.5px; font-weight: 700; font-family: var(--font-mono); color: var(--text-main); text-align: center; flex-shrink: 0; }
+  .item-code { width: 80px; font-family: var(--font-mono); font-size: 11px; font-weight: 700; flex-shrink: 0; }
+  .item-code span { background: #f1f5f9; color: var(--primary); border-radius: 4px; padding: 3px 6px; display: inline-flex; align-items: center; justify-content: center; }
+  
+  .item-desc { font-size: 13px; display: flex; align-items: center; gap: 6px; flex-grow: 1; white-space: nowrap; }
+  .item-desc .meta { color: #dc2626; font-size: 12.5px; font-weight: 700; }
+  
+  .findings-list { min-width: 150px; }
+  .findings-toggle { padding: 5px 10px; border: 1.5px solid var(--primary); border-radius: 6px; background: #ffffff; cursor: pointer; font-size: 11px; font-weight: 700; color: var(--primary); }
+  .findings-toggle.has-findings { background: var(--primary); color: #ffffff; }
+  .findings-body { display: none; margin-top: 8px; }
+  .findings-body.show { display: block; }
+  .finding-item { margin-bottom: 6px; display: flex; flex-direction: column; gap: 6px; }
+  
+  .finding-select, .correct-select {
+    width: 100%; min-width: 140px; font-size: 11.5px; font-weight: 600;
+    padding: 5px 8px; border: 1.5px solid var(--border); border-radius: 6px; background: #ffffff; outline: none;
+  }
+
+  .status-badge { display: inline-block; font-size: 11px; text-transform: uppercase; padding: 4px 10px; border-radius: 20px; font-weight: 700; white-space: nowrap; }
+  .status-badge.match { background: var(--match-bg); color: var(--match); border: 1px solid var(--match); }
+  .status-badge.pending { background: var(--pending-bg); color: var(--pending); border: 1px solid var(--pending); }
+  .stamp { display: inline-block; font-weight: 800; font-size: 10px; color: var(--match); border: 1.5px solid var(--match); border-radius: 4px; padding: 1px 6px; transform: rotate(-4deg); }
+
+  .loan { font-family: var(--font-mono); font-size: 13.5px; font-weight: 700; color: var(--text-main); white-space: nowrap; }
+  .footer-tools { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; flex-wrap: wrap; }
+  .found-check { width: 22px; height: 22px; cursor: pointer; accent-color: var(--match); }
+
+  .cloud-tag { background: #16a34a; color: #ffffff; font-size: 11px; padding: 4px 12px; border-radius: 20px; font-weight: 800; }
+  .cloud-tag.offline { background: #dc2626 !important; }
 </style>
 </head>
 <body>
 
-<div id="loading-overlay">
-  <div style="font-size: 24px; margin-bottom: 10px;">⏳ Processing Upload...</div>
-  <div style="font-size: 13px; color: #cbd5e1;">Uploading large datasets to cloud database...</div>
+<!-- CAMERA SCANNER MODAL -->
+<div id="cam-modal-overlay" class="offline-modal-overlay">
+  <div class="offline-modal-card" style="max-width: 500px; border-top-color: var(--primary);">
+    <h2 style="color: var(--primary);">📷 Scan PTN Barcode / QR</h2>
+    <p>I-point ang camera sa PTN Number o Barcode.</p>
+    <div id="qr-reader" style="width:100%; border-radius: 8px; overflow: hidden; background: #000; min-height: 200px;"></div>
+    <div id="cam-scan-result" style="margin-top: 10px; font-weight: bold; font-family: var(--font-mono); min-height: 24px;"></div>
+    <div class="modal-actions" style="margin-top: 15px;">
+      <button class="btn-dismiss" id="close-cam-modal">Close Camera</button>
+    </div>
+  </div>
 </div>
 
 <header>
-  <div class="header-wrap">
-    <div class="brand-title">
-      <img src="logo.png" height="32" alt="ML Logo" onerror="this.style.display='none';">
-      <span>QCL Audit Engine</span>
+  <div class="header-content">
+    <div class="header-title-box">
+      <img src="logo.png" class="header-logo-img" alt="ML Logo" onerror="this.style.display='none';">
+      <div>
+        <h1>QCL Physical Inventory Check</h1>
+        <div class="header-sub">Automated Pawn Ticket Verification & Audit Engine</div>
+      </div>
     </div>
-    <span class="status-badge" id="network-status-tag">Live Cloud Sync</span>
+    <span class="cloud-tag" id="network-status-tag">🔥 Live Multi-User Cloud Sync</span>
   </div>
 </header>
 
 <div class="wrap">
-  <div class="info-bar">
-    <div>
-      <button class="btn" onclick="window.location.href='dashboard.html'">⬅ Back to Dashboard</button>
+
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+    <button class="btn btn-dashboard" onclick="window.location.href='dashboard.html'">
+      <span>⬅️</span> Back to Dashboard
+    </button>
+    <div id="branch-current" style="font-size:14px; font-weight:700; color:#fff; text-shadow:0 1px 2px rgba(0,0,0,0.3);"></div>
+  </div>
+
+  <div class="cat-uploads" id="cat-uploads">
+    <div class="cat-upload-card" data-cat="prenda">
+      <h3>Prenda</h3>
+      <p class="cat-sub">New prenda / loan report</p>
+      <button class="btn small cat-upload-btn" data-cat="prenda" style="background:var(--primary); color:#fff;">Choose Excel File</button>
+      <input type="file" class="cat-file-input" data-cat="prenda" accept=".xlsx,.xls,.csv">
+      <div class="cat-status" data-cat-status="prenda">Not uploaded yet</div>
     </div>
-    <div style="text-align: right;">
-      <div class="info-title" id="branch-display">Loading Branch...</div>
-      <div class="info-sub" id="date-display">--</div>
+    <div class="cat-upload-card" data-cat="terms">
+      <h3>Terms Extended</h3>
+      <p class="cat-sub">Extended terms report</p>
+      <button class="btn small cat-upload-btn" data-cat="terms" style="background:var(--primary); color:#fff;">Choose Excel File</button>
+      <input type="file" class="cat-file-input" data-cat="terms" accept=".xlsx,.xls,.csv">
+      <div class="cat-status" data-cat-status="terms">Not uploaded yet</div>
+    </div>
+    <div class="cat-upload-card" data-cat="reappraisal">
+      <h3>Re-appraisal</h3>
+      <p class="cat-sub">Re-appraised items report</p>
+      <button class="btn small cat-upload-btn" data-cat="reappraisal" style="background:var(--primary); color:#fff;">Choose Excel File</button>
+      <input type="file" class="cat-file-input" data-cat="reappraisal" accept=".xlsx,.xls,.csv">
+      <div class="cat-status" data-cat-status="reappraisal">Not uploaded yet</div>
     </div>
   </div>
 
-  <div class="grid-uploads">
-    <div class="upload-card" id="card-prenda">
-      <h4 style="color:var(--primary);">Prenda</h4>
-      <p style="font-size: 11px; color: var(--text-muted); margin: 6px 0 12px;">Upload Excel/CSV/PDF</p>
-      <button class="btn cat-upload-btn" data-cat="prenda">Choose File</button>
-      <input type="file" class="cat-file-input" data-cat="prenda" accept=".xlsx,.xls,.csv,.pdf" style="display:none;">
-    </div>
-    <div class="upload-card" id="card-terms">
-      <h4 style="color:var(--primary);">Terms Extended</h4>
-      <p style="font-size: 11px; color: var(--text-muted); margin: 6px 0 12px;">Upload Excel/CSV/PDF</p>
-      <button class="btn cat-upload-btn" data-cat="terms">Choose File</button>
-      <input type="file" class="cat-file-input" data-cat="terms" accept=".xlsx,.xls,.csv,.pdf" style="display:none;">
-    </div>
-    <div class="upload-card" id="card-reappraisal">
-      <h4 style="color:var(--primary);">Re-appraisal (REAPP)</h4>
-      <p style="font-size: 11px; color: var(--text-muted); margin: 6px 0 12px;">Upload Excel/CSV/PDF</p>
-      <button class="btn cat-upload-btn" data-cat="reappraisal">Choose File</button>
-      <input type="file" class="cat-file-input" data-cat="reappraisal" accept=".xlsx,.xls,.csv,.pdf" style="display:none;">
+  <div id="status-line"></div>
+
+  <!-- STICKY CONTROLS -->
+  <div class="sticky-controls-wrapper">
+    <div class="tabs" id="category-tabs"></div>
+
+    <div class="toolbar">
+      <input type="text" id="search" placeholder="🔎 Search: PTN digits, or item description...">
+      <select id="filter-status">
+        <option value="all">All Status</option>
+        <option value="pending">Pending</option>
+        <option value="match">Found</option>
+      </select>
+      <button class="btn" id="open-cam-btn" style="background: var(--primary); color: #fff;">📷 Scan PTN</button>
     </div>
   </div>
 
-  <div class="counter-grid">
-    <div class="counter-card total">
-      <div class="counter-title">📦 Total Items / PTNs</div>
-      <div class="counter-value" id="count-total">0</div>
+  <div id="dashboard">
+    <div class="stats-row" id="stats-row"></div>
+
+    <div class="ledger">
+      <table id="ledger-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Pawn Ticket #</th>
+            <th>Date</th>
+            <th style="text-align:center;">Quantity</th>
+            <th>Item Code</th>
+            <th>Items / Description</th>
+            <th>Loan Value</th>
+            <th style="text-align:center;">Found?</th>
+            <th>Status</th>
+            <th>Findings & Correct</th>
+          </tr>
+        </thead>
+        <tbody id="ledger-body"></tbody>
+      </table>
     </div>
-    <div class="counter-card found">
-      <div class="counter-title">✅ Found Items</div>
-      <div class="counter-value" id="count-found">0</div>
-    </div>
-    <div class="counter-card pending">
-      <div class="counter-title">⏳ Pending Items</div>
-      <div class="counter-value" id="count-pending">0</div>
-    </div>
-    <div class="counter-card">
-      <div class="counter-title">📊 Audit Progress</div>
-      <div class="counter-value" id="count-progress" style="font-size: 20px;">0%</div>
-      <div class="progress-wrap"><div class="progress-bar" id="progress-bar-fill"></div></div>
+
+    <div class="footer-tools">
+      <button class="btn ghost" id="reset-counts-btn" style="color:var(--text-main); background:#fff;">Clear Found Marks</button>
+      <button class="btn" id="print-btn" style="background:var(--primary); color:#fff;">Print Report</button>
     </div>
   </div>
 
-  <div class="controls-bar">
-    <input type="text" id="search" class="input-search" placeholder="🔎 Search PTN or Description...">
-    <button class="btn btn-primary" id="clear-all-btn" style="background:#0f172a;" onclick="clearBranchInventory()">🗑️ Reset Branch Audit Data</button>
-  </div>
-
-  <div class="table-card">
-    <table>
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>Category</th>
-          <th>PTN</th>
-          <th>Date</th>
-          <th>Description</th>
-          <th>Loan Amount</th>
-          <th style="text-align: center;">Found</th>
-        </tr>
-      </thead>
-      <tbody id="ledger-body">
-        <tr><td colspan="7" style="text-align: center; color: var(--text-muted);">Upload files above to populate inventory.</td></tr>
-      </tbody>
-    </table>
-  </div>
 </div>
 
+<!-- FIREBASE & MAIN ENGINE -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
@@ -199,10 +349,18 @@
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
 
-  let currentBranch = "";
-  let currentAuditDate = "";
-  let currentUserRole = "";
+  const CATEGORIES = [
+    {key:'prenda', label:'Prenda'},
+    {key:'terms', label:'Terms Extended'},
+    {key:'reappraisal', label:'Re-appraisal'}
+  ];
+  
+  let categoryData = {};
+  let activeCategory = null;
   let tickets = [];
+  let currentBranch = '';
+  let currentAuditDate = '';
+  let html5QrCode = null;
 
   const $ = sel => document.querySelector(sel);
   const $$ = sel => Array.from(document.querySelectorAll(sel));
@@ -212,210 +370,300 @@
   window.addEventListener('DOMContentLoaded', () => {
     const urlParams = new URLSearchParams(window.location.search);
     currentBranch = urlParams.get('branch') || localStorage.getItem('ml_activeBranch') || 'ML Branch';
-    currentAuditDate = urlParams.get('date') || localStorage.getItem('vaultledger:remembered-audit-date') || new Date().toISOString().slice(0,10);
-    currentUserRole = urlParams.get('role') || localStorage.getItem('ml_userRole') || 'user';
+    currentAuditDate = urlParams.get('date') || new Date().toISOString().slice(0,10);
 
-    $('#branch-display').textContent = `🏢 ${currentBranch}`;
-    $('#date-display').textContent = `Audit Date: ${currentAuditDate}`;
-
-    // SAFE LOCAL STORAGE LOAD
-    try {
-      const cached = localStorage.getItem(`qcl_data_${slugBranch(currentBranch)}`);
-      if (cached) {
-        tickets = JSON.parse(cached);
-        renderTable();
-      }
-    } catch(err) {
-      console.warn("Storage quota limit reached for local cache. Relying on Firebase Cloud.");
-    }
-
-    listenFirebaseStore();
+    $('#branch-current').textContent = `🏢 ${currentBranch} | Date: ${currentAuditDate}`;
+    listenFirebaseQCLStore();
   });
 
-  function listenFirebaseStore() {
-    const branchSlug = slugBranch(currentBranch);
-    onValue(ref(db, `qclStore/${branchSlug}`), (snapshot) => {
-      const val = snapshot.val();
-      if (val && val.tickets) {
-        tickets = val.tickets;
-        
-        // SAFE LOCAL STORAGE CACHING
-        try {
-          localStorage.setItem(`qcl_data_${branchSlug}`, JSON.stringify(tickets));
-        } catch (e) {
-          console.warn("Skipped localStorage caching due to 5MB browser quota limit.");
-        }
-
-        renderTable();
-        $('#network-status-tag').textContent = `✓ ${tickets.length} PTNs Synced`;
-      }
-    });
-  }
-
-  function syncToFirebase() {
+  function listenFirebaseQCLStore() {
     if (!currentBranch) return;
     const branchSlug = slugBranch(currentBranch);
     
-    // SAFE SAVE TO LOCAL STORAGE
-    try {
-      localStorage.setItem(`qcl_data_${branchSlug}`, JSON.stringify(tickets));
-    } catch (e) {
-      console.warn("Local storage limit reached. Data is saved directly to Cloud Database.");
-    }
-    
-    const foundCount = tickets.filter(t => t.found).length;
-    
-    // FIREBASE CLOUD DATABASE HAS NO 5MB LIMIT
-    set(ref(db, `qclStore/${branchSlug}`), { 
-      branchName: currentBranch,
-      tickets: tickets,
-      totalCount: tickets.length,
-      foundCount: foundCount,
-      lastUpdated: new Date().toISOString() 
+    onValue(ref(db, `qclStore/${branchSlug}`), (snapshot) => {
+      const val = snapshot.val();
+      if (val) {
+        let changed = false;
+        Object.keys(val).forEach(catKey => {
+          if (val[catKey] && val[catKey].tickets) {
+            categoryData[catKey] = {
+              tickets: val[catKey].tickets,
+              fileName: val[catKey].fileName || '(synced)'
+            };
+            changed = true;
+
+            const card = document.querySelector(`.cat-upload-card[data-cat="${catKey}"]`);
+            if(card){
+              card.classList.add('done');
+              const statusEl = document.querySelector(`[data-cat-status="${catKey}"]`);
+              if(statusEl) statusEl.textContent = `✓ ${val[catKey].tickets.length} tickets — synced`;
+            }
+          }
+        });
+
+        if (changed) {
+          if (!activeCategory || !categoryData[activeCategory]) {
+            const availableKeys = Object.keys(categoryData);
+            if (availableKeys.length > 0) activeCategory = availableKeys[0];
+          }
+
+          if (activeCategory && categoryData[activeCategory]) {
+            tickets = categoryData[activeCategory].tickets;
+            $('#dashboard').classList.add('show');
+            renderCategoryTabs();
+            renderTable();
+            renderStats();
+          }
+        }
+      }
     });
   }
 
-  function updateCounters() {
-    const total = tickets.length;
-    const found = tickets.filter(t => t.found).length;
-    const pending = total - found;
-    const percentage = total > 0 ? Math.round((found / total) * 100) : 0;
-
-    $('#count-total').textContent = total.toLocaleString();
-    $('#count-found').textContent = found.toLocaleString();
-    $('#count-pending').textContent = pending.toLocaleString();
-    $('#count-progress').textContent = `${percentage}%`;
-    $('#progress-bar-fill').style.width = `${percentage}%`;
+  function syncQCLCategoryToFirebase(catKey) {
+    if (!currentBranch || !categoryData[catKey]) return;
+    const branchSlug = slugBranch(currentBranch);
+    set(ref(db, `qclStore/${branchSlug}/${catKey}`), {
+      tickets: categoryData[catKey].tickets,
+      fileName: categoryData[catKey].fileName,
+      lastUpdated: new Date().toISOString()
+    }).catch(e => console.warn(e));
   }
 
-  function renderTable() {
-    const body = $('#ledger-body');
-    const query = $('#search').value.toLowerCase().trim();
-    body.innerHTML = '';
-
-    updateCounters();
-
-    if(tickets.length === 0) {
-      body.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">No inventory records yet. Upload files above.</td></tr>`;
-      return;
-    }
-
-    tickets.forEach((t, i) => {
-      if (query && !t.ptn.toLowerCase().includes(query) && !t.desc.toLowerCase().includes(query)) return;
-
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${i + 1}</td>
-        <td><span class="tag-cat">${t.category || 'PRENDA'}</span></td>
-        <td class="ptn">${t.ptn}</td>
-        <td>${t.date || '—'}</td>
-        <td>${t.desc || '—'}</td>
-        <td>₱${t.loan ? Number(t.loan).toLocaleString() : '0.00'}</td>
-        <td style="text-align:center;"><input type="checkbox" class="found-check" data-idx="${i}" ${t.found ? 'checked' : ''}></td>
-      `;
-      body.appendChild(tr);
-    });
-
-    $$('.found-check').forEach(chk => {
-      chk.addEventListener('change', (e) => {
-        const idx = e.target.dataset.idx;
-        tickets[idx].found = e.target.checked;
-        syncToFirebase();
-      });
-    });
-  }
-
-  // UPLOAD CONTROLLER
   $$('.cat-upload-btn').forEach(btn => btn.addEventListener('click', () => {
     document.querySelector(`.cat-file-input[data-cat="${btn.dataset.cat}"]`).click();
   }));
 
-  $$('.cat-file-input').forEach(inp => inp.addEventListener('change', async (e) => {
-    const file = e.target.files[0];
-    const catKey = e.target.dataset.cat.toUpperCase();
-    if (!file) return;
-
-    $('#loading-overlay').style.display = 'flex';
-
-    setTimeout(async () => {
-      try {
-        const buf = await file.arrayBuffer();
-        const wb = XLSX.read(buf, { type: 'array', raw: true, cellDates: false });
-        const sheet = wb.Sheets[wb.SheetNames[0]];
-        const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false });
-
-        const extractedItems = [];
-        let lastValidPtn = "";
-        let lastValidDate = currentAuditDate;
-
-        rows.forEach((row, rowIdx) => {
-          if (!row || row.length === 0 || rowIdx === 0) return;
-
-          let rawPtn = String(row[1] || '').trim();
-          let rawDateVal = row[2] ? String(row[2]).trim() : '';
-          let descText = String(row[4] || '').trim();
-          let loanVal = row[10] || 0;
-
-          if (rawDateVal && rawDateVal !== 'None' && rawDateVal !== 'null') {
-            lastValidDate = rawDateVal.split('T')[0] || rawDateVal;
-          }
-
-          if (rawPtn && rawPtn !== 'None' && rawPtn !== 'null' && rawPtn.match(/\d/)) {
-            lastValidPtn = rawPtn.replace(/[*]+$/g, '').trim();
-          }
-
-          if (lastValidPtn && descText && descText !== 'None' && descText !== 'null') {
-            extractedItems.push({
-              ptn: lastValidPtn,
-              date: lastValidDate || currentAuditDate,
-              desc: descText,
-              loan: typeof loanVal === 'number' ? loanVal : parseFloat(String(loanVal).replace(/[^0-9.]/g, '')) || 0
-            });
-          }
-        });
-
-        const uniqueAdded = [];
-        extractedItems.forEach(item => {
-          if (!tickets.some(existing => existing.ptn === item.ptn && existing.desc === item.desc)) {
-            uniqueAdded.push({
-              category: catKey,
-              ptn: item.ptn,
-              date: item.date,
-              desc: item.desc,
-              loan: item.loan,
-              found: false
-            });
-          }
-        });
-
-        if (uniqueAdded.length > 0) {
-          tickets = [...tickets, ...uniqueAdded];
-          syncToFirebase();
-          renderTable();
-          alert(`✓ SUCCESS! Loaded ${file.name}.\nAdded ${uniqueAdded.length} items to ${catKey}.\nTotal inventory: ${tickets.length} items.`);
-        } else {
-          alert(`⚠️ No new items found in "${file.name}" (or items were already uploaded).`);
-        }
-
-      } catch (err) {
-        console.error(err);
-        alert("❌ Error reading file: " + err.message);
-      } finally {
-        $('#loading-overlay').style.display = 'none';
-        e.target.value = '';
-      }
-    }, 100);
+  $$('.cat-file-input').forEach(inp => inp.addEventListener('change', e => {
+    if(e.target.files[0]) handleFile(e.target.files[0], e.target.dataset.cat);
   }));
 
-  window.clearBranchInventory = function() {
-    if (confirm(`Are you sure you want to reset all audit records for "${currentBranch}"?`)) {
-      tickets = [];
-      syncToFirebase();
+  async function handleFile(file, catKey) {
+    $('#status-line').textContent = 'Reading Excel file...';
+    try {
+      const parsed = await parseExcelFile(file);
+      if(!parsed.tickets.length) {
+        $('#status-line').textContent = 'No valid pawn ticket rows found.';
+        return;
+      }
+
+      const catTickets = parsed.tickets.map((t, i) => ({
+        id: catKey + '_' + i,
+        ptn: t.ptn,
+        date: t.date,
+        items: t.items,
+        loan: t.loan,
+        actual: null
+      }));
+
+      categoryData[catKey] = { tickets: catTickets, fileName: file.name };
+      syncQCLCategoryToFirebase(catKey);
+
+      const card = document.querySelector(`.cat-upload-card[data-cat="${catKey}"]`);
+      card.classList.add('done');
+      document.querySelector(`[data-cat-status="${catKey}"]`).textContent = `✓ ${catTickets.length} tickets — ${file.name}`;
+
+      $('#status-line').textContent = `Loaded ${file.name}: ${catTickets.length} tickets.`;
+      activeCategory = catKey;
+      tickets = catTickets;
+
+      $('#dashboard').classList.add('show');
+      renderCategoryTabs();
       renderTable();
+      renderStats();
+
+    } catch(err) {
+      console.error(err);
+      $('#status-line').textContent = 'Error reading file: ' + err.message;
     }
-  };
+  }
+
+  function findHeaderCol(headerRow, candidates) {
+    for(let i=0; i<headerRow.length; i++) {
+      const cell = String(headerRow[i]||'').toLowerCase().trim();
+      if(candidates.some(c=>cell.includes(c))) return i;
+    }
+    return -1;
+  }
+
+  // EXACT PARSER ENGINE FROM YOUR CODE BASE FOR PRENDA, TE, AND REAPP
+  async function parseExcelFile(file) {
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, { type: 'array', raw: true, cellDates: false });
+    const sheetName = wb.SheetNames[0];
+    const sheet = wb.Sheets[sheetName];
+    const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false, defval: '' });
+
+    let headerIdx = -1, cols = {};
+    for(let i=0; i<rows.length; i++) {
+      const row = rows[i].map(c=>String(c||'').toLowerCase());
+      if(row.some(c=>c.includes('pawn ticket number')) && row.some(c=>c.includes('transaction date'))) {
+        headerIdx = i;
+        break;
+      }
+    }
+
+    if(headerIdx === -1) return { tickets: [] };
+
+    const header = rows[headerIdx];
+    cols.ptn   = findHeaderCol(header, ['pawn ticket number']);
+    cols.date  = findHeaderCol(header, ['transaction date']);
+    cols.code  = findHeaderCol(header, ['item code']);
+    cols.desc  = findHeaderCol(header, ['description']);
+    cols.pcs   = findHeaderCol(header, ['quantity', 'no. of pcs', 'pcs']);
+    cols.wt    = findHeaderCol(header, ['wt.', 'wt']);
+    cols.karat = findHeaderCol(header, ['karat']);
+    cols.loan  = findHeaderCol(header, ['loan value']);
+
+    const tickets = [];
+    let current = null;
+
+    for(let i = headerIdx + 1; i < rows.length; i++) {
+      const row = rows[i];
+      if(!row || row.every(c => String(c||'').trim()==='')) continue;
+
+      const rawPtn = cols.ptn >= 0 ? String(row[cols.ptn]||'').trim() : '';
+      const desc   = cols.desc >= 0 ? String(row[cols.desc]||'').trim() : '';
+      const code   = cols.code >= 0 ? String(row[cols.code]||'').trim() : '';
+
+      if(/^total\b/i.test(rawPtn) || /^total\b/i.test(desc)) continue;
+
+      const pcs   = cols.pcs >= 0 ? (Number(row[cols.pcs]) || (desc ? 1 : 0)) : (desc ? 1 : 0);
+      const wt    = cols.wt >= 0 ? (Number(row[cols.wt]) || 0) : 0;
+      const karat = cols.karat >= 0 ? (Number(row[cols.karat]) || 0) : 0;
+      const loan  = cols.loan >= 0 ? (Number(row[cols.loan]) || 0) : 0;
+
+      if(rawPtn && rawPtn !== 'None') {
+        const ptn = rawPtn.replace(/\*+$/,'').trim();
+        const date = cols.date >= 0 ? String(row[cols.date]||'').split('T')[0] : '';
+        if(!desc) continue;
+        current = { ptn, date, items:[{ code, desc, pcs, wt, karat }], loan };
+        tickets.push(current);
+      } else if(desc && current && desc !== 'None') {
+        current.items.push({ code, desc, pcs, wt, karat });
+      }
+    }
+
+    return { tickets };
+  }
+
+  function renderCategoryTabs() {
+    const wrap = $('#category-tabs');
+    wrap.innerHTML = '';
+    CATEGORIES.forEach(c => {
+      const data = categoryData[c.key];
+      const div = document.createElement('div');
+      const enabled = !!data;
+      div.className = 'tab' + (enabled ? ' enabled' : ' disabled') + (c.key === activeCategory ? ' active' : '');
+      div.innerHTML = `<div class="t-name">${c.label}</div><div class="t-count">${data ? data.tickets.length+' tickets' : 'not uploaded'}</div>`;
+      if(enabled) {
+        div.addEventListener('click', () => {
+          activeCategory = c.key;
+          tickets = categoryData[c.key].tickets;
+          renderCategoryTabs();
+          renderTable();
+          renderStats();
+        });
+      }
+      wrap.appendChild(div);
+    });
+    wrap.classList.add('show');
+  }
+
+  function renderTable() {
+    const q = $('#search').value.trim().toLowerCase();
+    const filterStatus = $('#filter-status').value;
+    const body = $('#ledger-body');
+    body.innerHTML = '';
+
+    tickets.forEach((t, idx) => {
+      const st = t.actual ? 'match' : 'pending';
+      if(filterStatus !== 'all' && st !== filterStatus) return;
+      if(q) {
+        const hay = (t.ptn + ' ' + t.items.map(i=>i.desc).join(' ')).toLowerCase();
+        if(!hay.includes(q)) return;
+      }
+
+      const tr = document.createElement('tr');
+      const isFound = st === 'match';
+
+      tr.innerHTML = `
+        <td class="num">${idx + 1}</td>
+        <td class="ptn">${t.ptn}</td>
+        <td class="date">${t.date || '—'}</td>
+        <td colspan="3" style="padding: 0;">
+          <div class="item-row-container">
+            ${t.items.map(it => `
+              <div class="item-single-row">
+                <div class="item-pcs">${it.pcs || 1}</div>
+                <div class="item-code"><span>${it.code || '—'}</span></div>
+                <div class="item-desc">
+                  <span>${it.desc}</span>
+                  <span class="meta">${it.karat ? it.karat+'K' : ''} ${it.wt ? it.wt+'g' : ''}</span>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </td>
+        <td class="loan">${t.loan ? '₱' + Number(t.loan).toLocaleString(undefined, {minimumFractionDigits:2}) : '—'}</td>
+        <td style="text-align:center;"><input type="checkbox" class="found-check" data-idx="${idx}" ${isFound ? 'checked' : ''}></td>
+        <td>${isFound ? '<span class="status-badge match">Found</span>' : '<span class="status-badge pending">Pending</span>'}</td>
+        <td class="findings-list">
+          <select class="finding-select" data-ti="${idx}">
+            <option value="">— Findings —</option>
+            <option value="Wrong Karat">Wrong Karat</option>
+            <option value="Wrong Description">Wrong Description</option>
+            <option value="Wrong Weight">Wrong Weight</option>
+          </select>
+        </td>
+      `;
+
+      tr.addEventListener('click', (e) => {
+        if(e.target.tagName === 'SELECT' || e.target.tagName === 'OPTION') return;
+        const chk = tr.querySelector('.found-check');
+        if (e.target !== chk) {
+          chk.checked = !chk.checked;
+          chk.dispatchEvent(new Event('change'));
+        }
+      });
+
+      body.appendChild(tr);
+    });
+
+    $$('.found-check').forEach(chk => {
+      chk.addEventListener('change', e => {
+        const i = +e.target.dataset.idx;
+        tickets[i].actual = e.target.checked ? true : null;
+        syncQCLCategoryToFirebase(activeCategory);
+        renderTable();
+        renderStats();
+      });
+    });
+  }
+
+  function renderStats() {
+    const total = tickets.length;
+    const matched = tickets.filter(t => t.actual).length;
+    const pending = total - matched;
+
+    $('#stats-row').innerHTML = `
+      <div class="stat-chip"><div class="num">${total}</div><div class="lab">Total Tickets</div></div>
+      <div class="stat-chip match"><div class="num">${matched}</div><div class="lab">Found</div></div>
+      <div class="stat-chip pending"><div class="num">${pending}</div><div class="lab">Pending</div></div>
+    `;
+  }
 
   $('#search').addEventListener('input', renderTable);
+  $('#filter-status').addEventListener('change', renderTable);
+
+  $('#reset-counts-btn').addEventListener('click', () => {
+    if(!confirm('Clear all Found checkmarks?')) return;
+    tickets.forEach(t => t.actual = null);
+    syncQCLCategoryToFirebase(activeCategory);
+    renderTable();
+    renderStats();
+  });
+
+  $('#print-btn').addEventListener('click', () => window.print());
 </script>
 </body>
 </html>
