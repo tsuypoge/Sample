@@ -25,7 +25,6 @@
     --radius-pill: 12px;
     --radius-search: 30px;
     --danger: #dc2626;
-    --danger-hover: #b91c1c;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -178,12 +177,20 @@
     font-weight: 700;
     font-size: 12px;
     cursor: pointer;
-    transition: all 0.15s;
   }
   .btn-delete:hover {
     background: var(--danger);
     color: #ffffff;
-    border-color: var(--danger);
+  }
+
+  .progress-pill {
+    font-size: 12px;
+    font-weight: 800;
+    padding: 4px 10px;
+    border-radius: 20px;
+    background: #f0fdf4;
+    color: #16a34a;
+    border: 1px solid #bbf7d0;
   }
 
   .modal-overlay {
@@ -205,7 +212,6 @@
     width: 90%;
     max-width: 440px;
     box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
-    position: relative;
   }
 
   .modal-header {
@@ -213,15 +219,6 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: 20px;
-  }
-
-  .modal-title {
-    font-size: 16px;
-    font-weight: 800;
-    color: var(--dark-navy);
-    display: flex;
-    align-items: center;
-    gap: 6px;
   }
 
   .close-modal-btn {
@@ -244,7 +241,6 @@
     color: var(--text-muted);
     margin-bottom: 6px;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
   }
 
   .input-modal, .select-modal {
@@ -254,12 +250,7 @@
     border: 1px solid #cbd5e1;
     font-size: 13px;
     outline: none;
-    font-family: inherit;
     background: #fff;
-  }
-
-  .input-modal:focus, .select-modal:focus {
-    border-color: var(--primary);
   }
 
   .modal-footer {
@@ -290,7 +281,6 @@
     font-size: 12px;
     cursor: pointer;
   }
-  .btn-enroll-submit:hover { background: var(--primary-hover); }
 </style>
 </head>
 <body>
@@ -380,8 +370,8 @@
 <div id="enroll-modal-overlay" class="modal-overlay">
   <div class="modal-card">
     <div class="modal-header">
-      <div class="modal-title">
-        <span style="color:var(--primary); font-size:18px;">+</span> Enroll New User
+      <div style="font-size:16px; font-weight:800; color:var(--dark-navy);">
+        <span style="color:var(--primary);">+</span> Enroll New User
       </div>
       <button class="close-modal-btn" onclick="closeEnrollModal()">✕</button>
     </div>
@@ -475,7 +465,7 @@
     listenAllBranchesAndStores();
   });
 
-  // REALTIME DYNAMIC SYNC FOR ALL BRANCHES
+  // REALTIME PTN PROGRESS CALCULATOR & BRANCH LISTENER
   function listenAllBranchesAndStores() {
     onValue(ref(db, 'qclStore'), (snapshot) => {
       const container = document.getElementById('branches-list');
@@ -492,18 +482,31 @@
 
       branchKeys.forEach(slug => {
         const item = storeData[slug];
-        const tickets = item.tickets || [];
-        const totalPTN = tickets.length;
-        const foundPTN = tickets.filter(t => t.found).length;
+        let totalPTN = 0;
+        let foundPTN = 0;
+
+        // ACCUMULATE PTN COUNTS FROM ALL CATEGORIES (Prenda, Terms, Reappraisal)
+        if (item.tickets && Array.isArray(item.tickets)) {
+          totalPTN += item.tickets.length;
+          foundPTN += item.tickets.filter(t => t.actual || t.found).length;
+        } else {
+          // If stored by category keys
+          Object.keys(item).forEach(catKey => {
+            if (item[catKey] && item[catKey].tickets) {
+              const catTickets = item[catKey].tickets;
+              totalPTN += catTickets.length;
+              foundPTN += catTickets.filter(t => t.actual || t.found).length;
+            }
+          });
+        }
+
         const pct = totalPTN > 0 ? Math.round((foundPTN / totalPTN) * 100) : 0;
-        
         const branchName = item.branchName || slug.replace(/-/g, ' ').toUpperCase();
 
         const div = document.createElement('div');
         div.className = 'list-item branch-item';
         div.setAttribute('data-name', branchName);
 
-        // CONDITIONAL RENDER: ADMIN GETS DELETE BUTTON
         const deleteBtnHTML = currentUserRole === 'admin' 
           ? `<button class="btn-delete" onclick="deleteBranchData('${slug}', '${branchName}')">🗑️ Delete</button>` 
           : '';
@@ -512,7 +515,8 @@
           <div>
             <strong style="font-size:14px; color:var(--dark-navy);">${branchName}</strong>
             <div style="font-size:12px; color:var(--text-muted); margin-top:4px;">
-              Progress: <b style="color:var(--primary);">${foundPTN} / ${totalPTN} Found</b> (${pct}%)
+              PTN Progress: <b style="color:var(--primary);">${foundPTN} / ${totalPTN} Found</b> 
+              <span class="progress-pill" style="margin-left:6px;">${pct}%</span>
             </div>
           </div>
           <div style="display:flex; gap:8px;">
@@ -533,10 +537,8 @@
     }
 
     if (confirm(`⚠️ Are you sure you want to PERMANENTLY DELETE "${branchName}"?\n\nThis will delete all PTNs and audit records from the Cloud Database!`)) {
-      // Remove from Firebase Realtime Database
       remove(ref(db, `qclStore/${slug}`))
         .then(() => {
-          // Also clear from local storage cache
           localStorage.removeItem(`qcl_data_${slug}`);
           alert(`✓ Branch "${branchName}" has been successfully deleted from database.`);
         })
