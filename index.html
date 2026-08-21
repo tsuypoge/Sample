@@ -146,17 +146,15 @@
     // STRICT ADMIN AUTHENTICATION CHECK
     if (user.toLowerCase() === "admin" && pass === "admin1234") {
       errorMsg.style.display = 'none';
-      
-      const savedBranch = localStorage.getItem('ml_activeBranch') || 'ML Branch';
 
       // Save session state as Admin
       localStorage.setItem('ml_userRole', 'admin');
       localStorage.setItem('ml_activeUser', 'admin');
 
-      // Redirect to QCL main portal with admin rights
-      window.location.href = `qcl.html?branch=${encodeURIComponent(savedBranch)}&role=admin`;
+      // Redirect to Main Admin Dashboard
+      window.location.href = 'dashboard.html';
     } else {
-      // Reject any non-admin login attempt
+      // Reject non-admin login attempt
       errorMsg.style.display = 'block';
     }
   });
