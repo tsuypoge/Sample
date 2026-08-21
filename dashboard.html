@@ -11,13 +11,14 @@
 <style>
   :root {
     --primary: #cc0000;
+    --primary-hover: #a00000;
     --dark-navy: #0f172a;
     --bg-main: #f8fafc;
     --card-bg: #ffffff;
     --border: #e2e8f0;
     --text: #334155;
     --text-muted: #64748b;
-    --active-tab-bg: #0f172a; /* Dark Navy Pill */
+    --active-tab-bg: #0f172a;
     --active-tab-text: #ffffff;
     --inactive-tab-bg: #edf2f7;
     --inactive-tab-text: #334155;
@@ -74,7 +75,7 @@
   }
   .btn-logout:hover { background: #e2e8f0; }
 
-  /* NAVIGATION TABS DESIGN (GIKAN SA PICTURE) */
+  /* NAVIGATION TABS DESIGN */
   .tab-navigation {
     display: flex;
     gap: 12px;
@@ -104,7 +105,7 @@
     box-shadow: 0 4px 12px rgba(15, 23, 42, 0.2);
   }
 
-  /* ROUNDED SEARCH BAR (GIKAN SA PICTURE) */
+  /* ROUNDED SEARCH BAR */
   .search-container {
     margin-bottom: 28px;
   }
@@ -142,7 +143,6 @@
   .tab-content { display: none; }
   .tab-content.active { display: block; }
 
-  /* CARDS & TABLES */
   .panel-card {
     background: #ffffff;
     border: 1px solid var(--border);
@@ -171,9 +171,111 @@
   }
   .btn-action:hover { background: #a00000; }
 
-  .form-group { margin-bottom: 12px; }
-  .form-group label { display: block; font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; text-transform: uppercase; }
-  .form-control { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; outline: none; }
+  /* ENROLL USER MODAL OVERLAY (KAPAREHAS SA PICTURE) */
+  .modal-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(4px);
+    display: flex; justify-content: center; align-items: center;
+    z-index: 9999; opacity: 0; pointer-events: none;
+    transition: opacity 0.2s ease;
+  }
+
+  .modal-overlay.show { opacity: 1; pointer-events: auto; }
+
+  .modal-card {
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 28px;
+    width: 90%;
+    max-width: 440px;
+    box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+    position: relative;
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+
+  .modal-title {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--dark-navy);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .close-modal-btn {
+    background: none;
+    border: none;
+    font-size: 18px;
+    color: var(--text-muted);
+    cursor: pointer;
+  }
+
+  .form-group-modal {
+    margin-bottom: 14px;
+    text-align: left;
+  }
+
+  .form-group-modal label {
+    display: block;
+    font-size: 10px;
+    font-weight: 800;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .input-modal {
+    width: 100%;
+    padding: 10px 14px;
+    border-radius: 20px;
+    border: 1px solid #cbd5e1;
+    font-size: 13px;
+    outline: none;
+    font-family: inherit;
+  }
+
+  .input-modal:focus {
+    border-color: var(--primary);
+  }
+
+  .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 24px;
+  }
+
+  .btn-cancel {
+    background: #edf2f7;
+    color: var(--text);
+    border: none;
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 12px;
+    cursor: pointer;
+  }
+
+  .btn-enroll-submit {
+    background: var(--primary);
+    color: #ffffff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .btn-enroll-submit:hover { background: var(--primary-hover); }
 </style>
 </head>
 <body>
@@ -189,7 +291,7 @@
     <button class="btn-logout" onclick="logout()">Logout</button>
   </div>
 
-  <!-- TABS NAVIGATION (GIKAN SA PICTURE) -->
+  <!-- TABS NAVIGATION -->
   <div class="tab-navigation">
     <button class="nav-tab active" id="tab-btn-audit" onclick="switchTab('audit')">
       📋 All Liquidations Audit
@@ -199,11 +301,11 @@
     </button>
   </div>
 
-  <!-- SEARCH BAR (GIKAN SA PICTURE) -->
+  <!-- SEARCH BAR -->
   <div class="search-container">
     <div class="search-wrapper">
       <span class="search-icon">🔍</span>
-      <input type="text" id="dashboard-search" class="input-search-pill" placeholder="Search User Name, Email, Branch, or Region...">
+      <input type="text" id="dashboard-search" class="input-search-pill" placeholder="Search User Name, Email, or Region...">
     </div>
   </div>
 
@@ -215,11 +317,10 @@
         <button class="btn-action" onclick="toggleAddBranch()">+ Enroll Branch</button>
       </div>
 
-      <!-- Add Branch Form -->
       <div id="add-branch-box" style="display:none; background:#f8fafc; padding:16px; border-radius:12px; margin-bottom:16px; border:1px solid var(--border);">
-        <div class="form-group">
-          <label>Branch Name</label>
-          <input type="text" id="new-branch-input" class="form-control" placeholder="e.g. ML Catarman Main">
+        <div style="margin-bottom:10px;">
+          <label style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Branch Name</label>
+          <input type="text" id="new-branch-input" class="input-modal" style="border-radius:8px;" placeholder="e.g. ML Catarman Main">
         </div>
         <button class="btn-action" onclick="saveNewBranch()" style="width:100%;">Save Branch</button>
       </div>
@@ -239,52 +340,157 @@
   <!-- CONTENT 2: USER PROFILES & CREDENTIALS -->
   <div id="content-users" class="tab-content">
     <div class="panel-card">
-      <h3 style="font-size:16px; font-weight:800; color:var(--dark-navy); margin-bottom:16px;">👤 User Profiles & Credentials</h3>
-      
-      <!-- Enroll New User Form -->
-      <div style="background:#f8fafc; padding:16px; border-radius:12px; margin-bottom:20px; border:1px solid var(--border);">
-        <h4 style="font-size:13px; font-weight:700; margin-bottom:12px;">Enroll New Auditor / Profile</h4>
-        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:12px;">
-          <div class="form-group">
-            <label>Username</label>
-            <input type="text" id="enroll-username" class="form-control" placeholder="Auditor Name">
-          </div>
-          <div class="form-group">
-            <label>Password</label>
-            <input type="password" id="enroll-password" class="form-control" placeholder="••••••••">
-          </div>
-          <div class="form-group">
-            <label>Region / Branch</label>
-            <input type="text" id="enroll-region" class="form-control" placeholder="e.g. Region 8">
-          </div>
-        </div>
-        <button class="btn-action" onclick="enrollUser()" style="margin-top:8px;">Enroll User Profile</button>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <h3 style="font-size:16px; font-weight:800; color:var(--dark-navy);">👥 User Profiles & Credentials</h3>
+        <button class="btn-action" onclick="openEnrollModal()">+ Enroll New User</button>
       </div>
 
       <!-- Enrolled Users List -->
       <div id="users-list">
         <div class="list-item">
           <div>
-            <strong>Admin Account</strong>
-            <div style="font-size:12px; color:var(--text-muted);">Role: System Administrator</div>
+            <strong>System Administrator</strong>
+            <div style="font-size:12px; color:var(--text-muted);">Username: admin | StrikeForce/Fraud Audit-IAD</div>
           </div>
           <span style="font-size:12px; font-weight:700; color:#16a34a;">Active</span>
         </div>
       </div>
-
     </div>
   </div>
 
 </div>
 
+<!-- ENROLL NEW USER MODAL POPUP (BAG-O GIKAN SA PICTURE) -->
+<div id="enroll-modal-overlay" class="modal-overlay">
+  <div class="modal-card">
+    <div class="modal-header">
+      <div class="modal-title">
+        <span style="color:var(--primary); font-size:18px;">+</span> Enroll New User
+      </div>
+      <button class="close-modal-btn" onclick="closeEnrollModal()">✕</button>
+    </div>
+
+    <form id="enroll-form" onsubmit="handleEnrollUser(event)">
+      <div class="form-group-modal">
+        <label>USERNAME</label>
+        <input type="text" id="modal-username" class="input-modal" placeholder="e.g. j.doe" required>
+      </div>
+
+      <div class="form-group-modal">
+        <label>FULL NAME</label>
+        <input type="text" id="modal-fullname" class="input-modal" placeholder="e.g. Jane Doe" required>
+      </div>
+
+      <div class="form-group-modal">
+        <label>DESIGNATION / POSITION</label>
+        <input type="text" id="modal-position" class="input-modal" placeholder="Audit Specialist" value="Audit Specialist" required>
+      </div>
+
+      <div class="form-group-modal">
+        <label>DEPARTMENT</label>
+        <input type="text" id="modal-dept" class="input-modal" placeholder="StrikeForce/Fraud Audit-IAD" value="StrikeForce/Fraud Audit-IAD" required>
+      </div>
+
+      <div class="form-group-modal">
+        <label>EMAIL ADDRESS</label>
+        <input type="email" id="modal-email" class="input-modal" placeholder="e.g. j.doe@sfcaliquidation.biz" required>
+      </div>
+
+      <div class="form-group-modal">
+        <label>DEFAULT PASSWORD</label>
+        <input type="password" id="modal-password" class="input-modal" placeholder="Set password" required>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-cancel" onclick="closeEnrollModal()">Cancel</button>
+        <button type="submit" class="btn-enroll-submit">+ Enroll User</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- FIREBASE SDK INITIALIZATION -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getDatabase, ref, set, push, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAx2EBFvZFTYyflmsDMs_GIQ4Y4e3n5v0g",
+    authDomain: "qcl-recon.firebaseapp.com",
+    databaseURL: "https://qcl-recon-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "qcl-recon",
+    storageBucket: "qcl-recon.firebasestorage.app",
+    messagingSenderId: "1025895074848",
+    appId: "1:1025895074848:web:51742b4db399230b8f0045"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  // FETCH ENROLLED USERS GIKAN SA FIREBASE
+  function listenUsers() {
+    onValue(ref(db, 'systemUsers'), (snapshot) => {
+      const container = document.getElementById('users-list');
+      container.innerHTML = '';
+      const data = snapshot.val();
+
+      if (data) {
+        Object.keys(data).forEach(key => {
+          const u = data[key];
+          const div = document.createElement('div');
+          div.className = 'list-item';
+          div.innerHTML = `
+            <div>
+              <strong>${u.fullName || u.username}</strong>
+              <div style="font-size:12px; color:var(--text-muted);">
+                Username: <b>${u.username}</b> | ${u.position || 'Auditor'} (${u.department || 'IAD'})
+              </div>
+            </div>
+            <span style="font-size:12px; font-weight:700; color:#16a34a;">Active</span>
+          `;
+          container.appendChild(div);
+        });
+      } else {
+        container.innerHTML = `<div style="font-size:12px; color:var(--text-muted);">No enrolled users yet. Click "+ Enroll New User" above.</div>`;
+      }
+    });
+  }
+
+  // SAVE NEW ENROLLED USER TO FIREBASE
+  window.handleEnrollUser = function(e) {
+    e.preventDefault();
+
+    const username = document.getElementById('modal-username').value.trim();
+    const fullName = document.getElementById('modal-fullname').value.trim();
+    const position = document.getElementById('modal-position').value.trim();
+    const department = document.getElementById('modal-dept').value.trim();
+    const email = document.getElementById('modal-email').value.trim();
+    const password = document.getElementById('modal-password').value.trim();
+
+    const newRef = push(ref(db, 'systemUsers'));
+    set(newRef, {
+      username,
+      fullName,
+      position,
+      department,
+      email,
+      password,
+      role: 'user',
+      createdDate: new Date().toISOString()
+    }).then(() => {
+      alert(`✓ User "${fullName}" successfully enrolled!`);
+      closeEnrollModal();
+      document.getElementById('enroll-form').reset();
+    }).catch(err => alert("Error enrolling user: " + err.message));
+  };
+
+  listenUsers();
+</script>
+
 <script>
-  // TAB SWITCHING LOGIC
   function switchTab(tabName) {
-    // Buttons
     document.getElementById('tab-btn-audit').classList.remove('active');
     document.getElementById('tab-btn-users').classList.remove('active');
-
-    // Contents
     document.getElementById('content-audit').classList.remove('active');
     document.getElementById('content-users').classList.remove('active');
 
@@ -295,6 +501,14 @@
       document.getElementById('tab-btn-users').classList.add('active');
       document.getElementById('content-users').classList.add('active');
     }
+  }
+
+  function openEnrollModal() {
+    document.getElementById('enroll-modal-overlay').classList.add('show');
+  }
+
+  function closeEnrollModal() {
+    document.getElementById('enroll-modal-overlay').classList.remove('show');
   }
 
   function toggleAddBranch() {
@@ -310,23 +524,6 @@
     localStorage.removeItem('ml_userRole');
     localStorage.removeItem('ml_activeUser');
     window.location.href = 'index.html';
-  }
-
-  function saveNewBranch() {
-    const name = document.getElementById('new-branch-input').value.trim();
-    if(!name) return alert('Please enter branch name.');
-    alert(`Branch "${name}" enrolled successfully!`);
-    document.getElementById('new-branch-input').value = '';
-    toggleAddBranch();
-  }
-
-  function enrollUser() {
-    const u = document.getElementById('enroll-username').value.trim();
-    if(!u) return alert('Please enter username.');
-    alert(`User profile "${u}" enrolled successfully!`);
-    document.getElementById('enroll-username').value = '';
-    document.getElementById('enroll-password').value = '';
-    document.getElementById('enroll-region').value = '';
   }
 </script>
 
