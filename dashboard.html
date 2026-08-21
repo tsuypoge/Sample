@@ -140,8 +140,8 @@
   }
 
   /* TAB CONTENT PANELS */
-  .tab-content { display: none; }
-  .tab-content.active { display: block; }
+  .tab-content { display: none !important; }
+  .tab-content.active { display: block !important; }
 
   .panel-card {
     background: #ffffff;
@@ -298,7 +298,7 @@
   <!-- TABS NAVIGATION -->
   <div class="tab-navigation">
     <button class="nav-tab active" id="tab-btn-audit" onclick="switchTab('audit')">
-      📋 All Liquidations Audit
+      📋 All Branches
     </button>
     <!-- ADMIN ONLY TAB BUTTON -->
     <button class="nav-tab admin-only" id="tab-btn-users" onclick="switchTab('users')" style="display:none;">
@@ -314,7 +314,7 @@
     </div>
   </div>
 
-  <!-- CONTENT 1: ALL LIQUIDATIONS / BRANCHES AUDIT -->
+  <!-- CONTENT 1: ALL BRANCHES AUDIT -->
   <div id="content-audit" class="tab-content active">
     <div class="panel-card">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
@@ -343,7 +343,7 @@
   </div>
 
   <!-- CONTENT 2: USER PROFILES & CREDENTIALS (ADMIN ONLY) -->
-  <div id="content-users" class="tab-content admin-only" style="display:none;">
+  <div id="content-users" class="tab-content admin-only">
     <div class="panel-card">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
         <h3 style="font-size:16px; font-weight:800; color:var(--dark-navy);">👥 User Profiles & Credentials</h3>
@@ -384,7 +384,7 @@
       <div class="form-group-modal">
         <label>SYSTEM ROLE / FUNCTION</label>
         <select id="modal-role" class="select-modal" required>
-          <option value="auditor">Auditor (Standard User)</option>
+          <option value="user">Auditor (Standard User)</option>
           <option value="admin">Admin (Full Access)</option>
         </select>
       </div>
@@ -440,27 +440,27 @@
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
 
-  // CHECK ACTIVE USER ROLE UPON LOAD
-  const currentUserRole = (localStorage.getItem('ml_userRole') || 'auditor').toLowerCase();
+  const currentUserRole = (localStorage.getItem('ml_userRole') || 'user').toLowerCase();
   const currentUserName = localStorage.getItem('ml_activeUser') || 'User';
 
   document.addEventListener('DOMContentLoaded', () => {
     const badge = document.getElementById('user-role-badge');
     badge.textContent = currentUserRole === 'admin' ? `👑 ${currentUserName} (ADMIN)` : `👤 ${currentUserName} (AUDITOR)`;
 
-    // SHOW/HIDE ADMIN-ONLY ELEMENTS
     if (currentUserRole === 'admin') {
       document.querySelectorAll('.admin-only').forEach(el => {
         if (el.tagName === 'BUTTON') el.style.display = 'inline-flex';
         else if (el.id === 'tab-btn-users') el.style.display = 'inline-flex';
-        else el.style.display = 'block';
       });
     } else {
-      document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
+      document.querySelectorAll('.admin-only').forEach(el => {
+        el.style.setProperty('display', 'none', 'important');
+      });
     }
+
+    switchTab('audit');
   });
 
-  // FETCH ENROLLED USERS FROM FIREBASE
   function listenUsers() {
     onValue(ref(db, 'systemUsers'), (snapshot) => {
       const container = document.getElementById('users-list');
@@ -477,7 +477,7 @@
             <div>
               <strong>${u.fullName || u.username}</strong>
               <div style="font-size:12px; color:var(--text-muted);">
-                Username: <b>${u.username}</b> | Role: <b style="text-transform:uppercase; color:var(--primary);">${u.role || 'auditor'}</b> | ${u.position || 'Auditor'} (${u.department || 'IAD'})
+                Username: <b>${u.username}</b> | Role: <b style="text-transform:uppercase; color:var(--primary);">${u.role || 'user'}</b> | ${u.position || 'Auditor'} (${u.department || 'IAD'})
               </div>
             </div>
             <span style="font-size:12px; font-weight:700; color:#16a34a;">Active</span>
@@ -490,7 +490,6 @@
     });
   }
 
-  // SAVE NEW USER TO FIREBASE WITH ROLE
   window.handleEnrollUser = function(e) {
     e.preventDefault();
 
@@ -523,7 +522,6 @@
 </script>
 
 <script>
-  // AUTOMATIC CREDENTIALS GENERATOR
   function autoGenerateCredentials() {
     const fullNameInput = document.getElementById('modal-fullname').value.trim();
     if (!fullNameInput) {
@@ -552,19 +550,25 @@
   }
 
   function switchTab(tabName) {
-    document.getElementById('tab-btn-audit').classList.remove('active');
-    document.getElementById('tab-btn-users').classList.remove('active');
-    
-    document.getElementById('content-audit').classList.remove('active');
-    document.getElementById('content-users').classList.remove('active');
+    const auditTab = document.getElementById('tab-btn-audit');
+    const usersTab = document.getElementById('tab-btn-users');
+    const auditContent = document.getElementById('content-audit');
+    const usersContent = document.getElementById('content-users');
+
+    const currentUserRole = (localStorage.getItem('ml_userRole') || 'user').toLowerCase();
 
     if (tabName === 'audit') {
-      document.getElementById('tab-btn-audit').classList.add('active');
-      document.getElementById('content-audit').classList.add('active');
-    } else {
-      document.getElementById('tab-btn-users').classList.add('active');
-      document.getElementById('content-users').classList.add('active');
-      document.getElementById('content-users').style.display = 'block';
+      auditTab.classList.add('active');
+      if (usersTab) usersTab.classList.remove('active');
+      
+      auditContent.classList.add('active');
+      usersContent.classList.remove('active');
+    } else if (tabName === 'users' && currentUserRole === 'admin') {
+      usersTab.classList.add('active');
+      auditTab.classList.remove('active');
+
+      usersContent.classList.add('active');
+      auditContent.classList.remove('active');
     }
   }
 
@@ -582,7 +586,7 @@
   }
 
   function openBranch(branchName) {
-    const role = localStorage.getItem('ml_userRole') || 'auditor';
+    const role = localStorage.getItem('ml_userRole') || 'user';
     window.location.href = `qcl.html?branch=${encodeURIComponent(branchName)}&role=${role}`;
   }
 
