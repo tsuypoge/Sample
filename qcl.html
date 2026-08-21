@@ -9,6 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<!-- CAMERA SCANNER LIBRARY -->
 <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 
 <style>
@@ -185,7 +186,6 @@
   tbody tr:hover { background-color: #fef2f2 !important; }
 
   .ptn { font-size: 14px; font-weight: 700; font-family: var(--font-mono); color: var(--text-main); white-space: nowrap; }
-  .ptn .flag { color: var(--primary); }
   .date { font-size: 13px; font-family: var(--font-mono); color: var(--text-muted); white-space: nowrap; }
   
   .item-row-container { display: flex; flex-direction: column; gap: 6px; }
@@ -198,13 +198,7 @@
   .item-desc .meta { color: #dc2626; font-size: 12.5px; font-weight: 700; }
   
   .findings-list { min-width: 150px; }
-  .findings-toggle { padding: 5px 10px; border: 1.5px solid var(--primary); border-radius: 6px; background: #ffffff; cursor: pointer; font-size: 11px; font-weight: 700; color: var(--primary); }
-  .findings-toggle.has-findings { background: var(--primary); color: #ffffff; }
-  .findings-body { display: none; margin-top: 8px; }
-  .findings-body.show { display: block; }
-  .finding-item { margin-bottom: 6px; display: flex; flex-direction: column; gap: 6px; }
-  
-  .finding-select, .correct-select {
+  .finding-select {
     width: 100%; min-width: 140px; font-size: 11.5px; font-weight: 600;
     padding: 5px 8px; border: 1.5px solid var(--border); border-radius: 6px; background: #ffffff; outline: none;
   }
@@ -212,14 +206,13 @@
   .status-badge { display: inline-block; font-size: 11px; text-transform: uppercase; padding: 4px 10px; border-radius: 20px; font-weight: 700; white-space: nowrap; }
   .status-badge.match { background: var(--match-bg); color: var(--match); border: 1px solid var(--match); }
   .status-badge.pending { background: var(--pending-bg); color: var(--pending); border: 1px solid var(--pending); }
-  .stamp { display: inline-block; font-weight: 800; font-size: 10px; color: var(--match); border: 1.5px solid var(--match); border-radius: 4px; padding: 1px 6px; transform: rotate(-4deg); }
 
   .loan { font-family: var(--font-mono); font-size: 13.5px; font-weight: 700; color: var(--text-main); white-space: nowrap; }
   .footer-tools { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; flex-wrap: wrap; }
   .found-check { width: 22px; height: 22px; cursor: pointer; accent-color: var(--match); }
 
   .cloud-tag { background: #16a34a; color: #ffffff; font-size: 11px; padding: 4px 12px; border-radius: 20px; font-weight: 800; }
-  .cloud-tag.offline { background: #dc2626 !important; }
+  .btn-dismiss { background: #f1f5f9; color: var(--text-main); border: 1px solid var(--border); padding: 10px 18px; border-radius: var(--radius-sm); font-weight: 700; font-size: 13px; cursor: pointer; }
 </style>
 </head>
 <body>
@@ -316,7 +309,7 @@
             <th>Loan Value</th>
             <th style="text-align:center;">Found?</th>
             <th>Status</th>
-            <th>Findings & Correct</th>
+            <th>Findings</th>
           </tr>
         </thead>
         <tbody id="ledger-body"></tbody>
@@ -331,7 +324,7 @@
 
 </div>
 
-<!-- FIREBASE & MAIN ENGINE -->
+<!-- FIREBASE & CAMERA INTEGRATED MODULE -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
@@ -485,7 +478,6 @@
     return -1;
   }
 
-  // EXACT PARSER ENGINE FROM YOUR CODE BASE FOR PRENDA, TE, AND REAPP
   async function parseExcelFile(file) {
     const buf = await file.arrayBuffer();
     const wb = XLSX.read(buf, { type: 'array', raw: true, cellDates: false });
@@ -650,6 +642,56 @@
       <div class="stat-chip match"><div class="num">${matched}</div><div class="lab">Found</div></div>
       <div class="stat-chip pending"><div class="num">${pending}</div><div class="lab">Pending</div></div>
     `;
+  }
+
+  // --- CAMERA SCANNER FUNCTIONS ---
+  $('#open-cam-btn').addEventListener('click', () => {
+    if (!activeCategory || !tickets.length) {
+      alert('Palihug mag-upload una og report o mag-select sa category.');
+      return;
+    }
+    $('#cam-modal-overlay').classList.add('show');
+    startCameraScanner();
+  });
+
+  $('#close-cam-modal').addEventListener('click', () => {
+    stopCameraScanner();
+    $('#cam-modal-overlay').classList.remove('show');
+  });
+
+  function startCameraScanner() {
+    if (!html5QrCode) {
+      html5QrCode = new Html5Qrcode("qr-reader");
+    }
+    const config = { fps: 10, qrbox: { width: 250, height: 150 } };
+    html5QrCode.start(
+      { facingMode: "environment" },
+      config,
+      onScanSuccess
+    ).catch(err => alert("Camera permission error: " + err));
+  }
+
+  function stopCameraScanner() {
+    if (html5QrCode && html5QrCode.isScanning) {
+      html5QrCode.stop().catch(err => console.error(err));
+    }
+  }
+
+  function onScanSuccess(decodedText) {
+    const cleanScanned = decodedText.replace(/[^0-9]/g, '');
+    const matchIndex = tickets.findIndex(t => t.ptn.replace(/[^0-9]/g, '').includes(cleanScanned) && cleanScanned.length >= 5);
+
+    if (matchIndex !== -1) {
+      tickets[matchIndex].actual = true;
+      syncQCLCategoryToFirebase(activeCategory);
+      renderTable();
+      renderStats();
+      $('#cam-scan-result').style.color = 'var(--match)';
+      $('#cam-scan-result').textContent = `✓ MATCH FOUND: ${tickets[matchIndex].ptn}`;
+    } else {
+      $('#cam-scan-result').style.color = '#dc2626';
+      $('#cam-scan-result').textContent = `❌ Not Found: ${decodedText}`;
+    }
   }
 
   $('#search').addEventListener('input', renderTable);
