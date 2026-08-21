@@ -92,7 +92,7 @@
 
 <div id="loading-overlay">
   <div style="font-size: 24px; margin-bottom: 10px;">⏳ Processing Upload...</div>
-  <div style="font-size: 13px; color: #cbd5e1;">Reading pawn tickets & syncing to cloud...</div>
+  <div style="font-size: 13px; color: #cbd5e1;">Parsing Prenda/TE/Reapp records...</div>
 </div>
 
 <header>
@@ -306,7 +306,7 @@
     });
   }
 
-  // EXACT FORMAT PARSER FOR PRENDA.XLSX, TE.XLSX, REAPP.XLSX
+  // SAFE PARSER FOR PRENDA, TE, REAPP WITHOUT TIME ERROR
   $$('.cat-upload-btn').forEach(btn => btn.addEventListener('click', () => {
     document.querySelector(`.cat-file-input[data-cat="${btn.dataset.cat}"]`).click();
   }));
@@ -321,30 +321,34 @@
     setTimeout(async () => {
       try {
         const buf = await file.arrayBuffer();
-        const wb = XLSX.read(buf, {type:'array', cellDates:true});
+        // RAW STRING READING TO PREVENT INVALID DATE ERRORS
+        const wb = XLSX.read(buf, { type: 'array', raw: true, cellDates: false });
         const sheet = wb.Sheets[wb.SheetNames[0]];
-        const rows = XLSX.utils.sheet_to_json(sheet, {header:1});
+        const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false });
 
         const extractedItems = [];
         let lastValidPtn = "";
         let lastValidDate = currentAuditDate;
 
         rows.forEach((row, rowIdx) => {
-          if (!row || row.length === 0 || rowIdx === 0) return; // Skip Header Row
+          if (!row || row.length === 0 || rowIdx === 0) return; // Skip Header
 
           let rawPtn = String(row[1] || '').trim(); // Pawn Ticket Number (Column B)
-          let rawDate = row[2] ? new Date(row[2]).toISOString().slice(0,10) : '';
+          let rawDateVal = row[2] ? String(row[2]).trim() : '';
           let descText = String(row[4] || '').trim(); // Description (Column E)
           let loanVal = row[10] || 0; // Loan Value (Column K)
 
-          // Clean PTN String (e.g. 115906358-2026-01082* -> 115906358-2026-01082)
-          if (rawPtn && rawPtn !== 'None' && rawPtn !== 'null') {
-            lastValidPtn = rawPtn.replace(/[*]+$/g, '').trim();
-            if (rawDate) lastValidDate = rawDate;
+          // Safe Date Format
+          if (rawDateVal && rawDateVal !== 'None' && rawDateVal !== 'null') {
+            lastValidDate = rawDateVal.split('T')[0] || rawDateVal;
           }
 
-          // If row has valid PTN or sub-item description
-          if (lastValidPtn && (descText && descText !== 'None')) {
+          // Clean PTN String
+          if (rawPtn && rawPtn !== 'None' && rawPtn !== 'null' && rawPtn.match(/\d/)) {
+            lastValidPtn = rawPtn.replace(/[*]+$/g, '').trim();
+          }
+
+          if (lastValidPtn && descText && descText !== 'None' && descText !== 'null') {
             extractedItems.push({
               ptn: lastValidPtn,
               date: lastValidDate || currentAuditDate,
@@ -354,7 +358,7 @@
           }
         });
 
-        // APPEND & PREVENT EXACT DUPLICATES
+        // APPEND NEW UNIQUE ITEMS
         const uniqueAdded = [];
         extractedItems.forEach(item => {
           if (!tickets.some(existing => existing.ptn === item.ptn && existing.desc === item.desc)) {
@@ -373,9 +377,9 @@
           tickets = [...tickets, ...uniqueAdded];
           syncToFirebase();
           renderTable();
-          alert(`✓ SUCCESS! Processed ${file.name}.\nAdded ${uniqueAdded.length} items to ${catKey}.\nTotal inventory: ${tickets.length} items.`);
+          alert(`✓ SUCCESS! Loaded ${file.name}.\nAdded ${uniqueAdded.length} items to ${catKey}.\nTotal inventory: ${tickets.length} items.`);
         } else {
-          alert(`⚠️ No new items found in "${file.name}" (or file was already uploaded).`);
+          alert(`⚠️ No new items found in "${file.name}" (or items were already uploaded).`);
         }
 
       } catch (err) {
