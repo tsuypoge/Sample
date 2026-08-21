@@ -1,7 +1,437 @@
-<!-- FIREBASE MULTI-USER REALTIME ENGINE -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>M Lhuillier — Audit Dashboard</title>
+<link rel="icon" type="image/png" href="logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --primary: #cc0000;
+    --primary-hover: #a00000;
+    --dark-navy: #0f172a;
+    --bg-main: #f8fafc;
+    --card-bg: #ffffff;
+    --border: #e2e8f0;
+    --text: #334155;
+    --text-muted: #64748b;
+    --active-tab-bg: #0f172a;
+    --active-tab-text: #ffffff;
+    --inactive-tab-bg: #edf2f7;
+    --inactive-tab-text: #334155;
+    --radius-pill: 12px;
+    --radius-search: 30px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background-color: var(--bg-main);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 24px;
+  }
+
+  .wrap {
+    max-width: 1200px;
+    margin: 0 auto;
+    background: var(--card-bg);
+    border-radius: 16px;
+    padding: 32px 28px;
+    border: 1px solid var(--border);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+  }
+
+  /* HEADER BRAND & LOGOUT */
+  .header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+  }
+
+  .brand-title {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--primary);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .btn-logout {
+    background: #f1f5f9;
+    color: #0f172a;
+    border: 1px solid var(--border);
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .btn-logout:hover { background: #e2e8f0; }
+
+  /* NAVIGATION TABS DESIGN */
+  .tab-navigation {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 20px;
+  }
+
+  .nav-tab {
+    background: var(--inactive-tab-bg);
+    color: var(--inactive-tab-text);
+    padding: 12px 24px;
+    border-radius: var(--radius-pill);
+    font-weight: 700;
+    font-size: 14px;
+    border: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+  }
+
+  .nav-tab.active {
+    background: var(--active-tab-bg);
+    color: var(--active-tab-text);
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.2);
+  }
+
+  /* ROUNDED SEARCH BAR */
+  .search-container {
+    margin-bottom: 28px;
+  }
+
+  .search-wrapper {
+    position: relative;
+    max-width: 500px;
+  }
+
+  .search-icon {
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 16px;
+  }
+
+  .input-search-pill {
+    width: 100%;
+    padding: 12px 16px 12px 42px;
+    border-radius: var(--radius-search);
+    border: 1px solid #cbd5e1;
+    font-size: 14px;
+    outline: none;
+    color: var(--text);
+    transition: border-color 0.2s;
+  }
+
+  .input-search-pill:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(204,0,0,0.1);
+  }
+
+  /* TAB CONTENT PANELS */
+  .tab-content { display: none !important; }
+  .tab-content.active { display: block !important; }
+
+  .panel-card {
+    background: #ffffff;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+  }
+
+  .list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 0;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  .list-item:last-child { border-bottom: none; }
+
+  .btn-action {
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .btn-action:hover { background: #a00000; }
+
+  /* ENROLL USER MODAL OVERLAY */
+  .modal-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(4px);
+    display: flex; justify-content: center; align-items: center;
+    z-index: 9999; opacity: 0; pointer-events: none;
+    transition: opacity 0.2s ease;
+  }
+
+  .modal-overlay.show { opacity: 1; pointer-events: auto; }
+
+  .modal-card {
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 28px;
+    width: 90%;
+    max-width: 440px;
+    box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+    position: relative;
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+
+  .modal-title {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--dark-navy);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .close-modal-btn {
+    background: none;
+    border: none;
+    font-size: 18px;
+    color: var(--text-muted);
+    cursor: pointer;
+  }
+
+  .form-group-modal {
+    margin-bottom: 14px;
+    text-align: left;
+  }
+
+  .form-group-modal label {
+    display: block;
+    font-size: 10px;
+    font-weight: 800;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .input-modal, .select-modal {
+    width: 100%;
+    padding: 10px 14px;
+    border-radius: 20px;
+    border: 1px solid #cbd5e1;
+    font-size: 13px;
+    outline: none;
+    font-family: inherit;
+    background: #fff;
+  }
+
+  .input-modal:focus, .select-modal:focus {
+    border-color: var(--primary);
+  }
+
+  .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 24px;
+  }
+
+  .btn-cancel {
+    background: #edf2f7;
+    color: var(--text);
+    border: none;
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 12px;
+    cursor: pointer;
+  }
+
+  .btn-enroll-submit {
+    background: var(--primary);
+    color: #ffffff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .btn-enroll-submit:hover { background: var(--primary-hover); }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <!-- HEADER -->
+  <div class="header-top">
+    <div class="brand-title">
+      <img src="logo.png" height="32" alt="ML Logo" onerror="this.style.display='none';">
+      <span>M Lhuillier QCL Audit Portal</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:12px;">
+      <span id="user-role-badge" style="font-size:12px; font-weight:700; background:#e2e8f0; padding:4px 10px; border-radius:12px;">👤 Auditor</span>
+      <button class="btn-logout" onclick="logout()">Logout</button>
+    </div>
+  </div>
+
+  <!-- TABS NAVIGATION -->
+  <div class="tab-navigation">
+    <button class="nav-tab active" id="tab-btn-audit" onclick="switchTab('audit')">
+      📋 All Branches
+    </button>
+    <!-- ADMIN ONLY TAB BUTTON -->
+    <button class="nav-tab admin-only" id="tab-btn-users" onclick="switchTab('users')" style="display:none;">
+      👥 User Profiles & Credentials
+    </button>
+  </div>
+
+  <!-- SEARCH BAR -->
+  <div class="search-container">
+    <div class="search-wrapper">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="dashboard-search" class="input-search-pill" placeholder="Search User Name, Email, or Region...">
+    </div>
+  </div>
+
+  <!-- CONTENT 1: ALL BRANCHES AUDIT -->
+  <div id="content-audit" class="tab-content active">
+    <div class="panel-card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <h3 style="font-size:16px; font-weight:800; color:var(--dark-navy);">🏢 Registered Branch Inventories</h3>
+        <!-- USER / AUDITOR NEW BRANCH REDIRECT BUTTON -->
+        <button class="btn-action" onclick="toggleUserBranchBox()">+ Open New Branch Audit</button>
+      </div>
+
+      <!-- NEW BRANCH DIRECT REDIRECT BOX FOR USER -->
+      <div id="user-branch-box" style="display:none; background:#f8fafc; padding:16px; border-radius:12px; margin-bottom:16px; border:1px solid var(--border);">
+        <div style="margin-bottom:10px;">
+          <label style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Enter Branch Name</label>
+          <input type="text" id="user-branch-name" class="input-modal" style="border-radius:8px;" placeholder="e.g. ML Liloan 3, ML Catarman">
+        </div>
+        <div style="margin-bottom:12px;">
+          <label style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Audit Date</label>
+          <input type="date" id="user-audit-date" class="input-modal" style="border-radius:8px;">
+        </div>
+        <button class="btn-action" onclick="launchUserBranchAudit()" style="width:100%;">🔑 Launch Branch Audit (qcl.html)</button>
+      </div>
+
+      <div id="branches-list">
+        <div class="list-item">
+          <div>
+            <strong>ML Catarman</strong>
+            <div style="font-size:12px; color:var(--text-muted);">Region: Visayas</div>
+          </div>
+          <button class="btn-action" onclick="openBranch('ML Catarman')">Open Audit Engine</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTENT 2: USER PROFILES & CREDENTIALS (ADMIN ONLY) -->
+  <div id="content-users" class="tab-content admin-only">
+    <div class="panel-card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <h3 style="font-size:16px; font-weight:800; color:var(--dark-navy);">👥 User Profiles & Credentials</h3>
+        <button class="btn-action" onclick="openEnrollModal()">+ Enroll New User</button>
+      </div>
+
+      <!-- Enrolled Users List -->
+      <div id="users-list">
+        <div class="list-item">
+          <div>
+            <strong>System Administrator</strong>
+            <div style="font-size:12px; color:var(--text-muted);">Username: admin | StrikeForce/Fraud Audit-IAD</div>
+          </div>
+          <span style="font-size:12px; font-weight:700; color:#16a34a;">Active</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ENROLL NEW USER MODAL POPUP -->
+<div id="enroll-modal-overlay" class="modal-overlay">
+  <div class="modal-card">
+    <div class="modal-header">
+      <div class="modal-title">
+        <span style="color:var(--primary); font-size:18px;">+</span> Enroll New User
+      </div>
+      <button class="close-modal-btn" onclick="closeEnrollModal()">✕</button>
+    </div>
+
+    <form id="enroll-form" onsubmit="handleEnrollUser(event)">
+      <div class="form-group-modal">
+        <label>FULL NAME</label>
+        <input type="text" id="modal-fullname" class="input-modal" placeholder="e.g. Rey John Duero" oninput="autoGenerateCredentials()" required>
+      </div>
+
+      <div class="form-group-modal">
+        <label>SYSTEM ROLE / FUNCTION</label>
+        <select id="modal-role" class="select-modal" required>
+          <option value="user">Auditor (Standard User)</option>
+          <option value="admin">Admin (Full Access)</option>
+        </select>
+      </div>
+
+      <div class="form-group-modal">
+        <label>USERNAME (AUTO-GENERATED)</label>
+        <input type="text" id="modal-username" class="input-modal" placeholder="e.g. r.duero" readonly style="background:#f1f5f9; cursor:not-allowed;" required>
+      </div>
+
+      <div class="form-group-modal">
+        <label>DESIGNATION / POSITION</label>
+        <input type="text" id="modal-position" class="input-modal" placeholder="Audit Specialist" value="Audit Specialist" required>
+      </div>
+
+      <div class="form-group-modal">
+        <label>DEPARTMENT</label>
+        <input type="text" id="modal-dept" class="input-modal" placeholder="StrikeForce/Fraud Audit-IAD" value="StrikeForce/Fraud Audit-IAD" required>
+      </div>
+
+      <div class="form-group-modal">
+        <label>EMAIL ADDRESS</label>
+        <input type="email" id="modal-email" class="input-modal" placeholder="e.g. r.duero@sfcaliquidation.biz" required>
+      </div>
+
+      <div class="form-group-modal">
+        <label>DEFAULT PASSWORD (AUTO-GENERATED)</label>
+        <input type="text" id="modal-password" class="input-modal" placeholder="Auto-generated from Last Name" readonly style="background:#f1f5f9; cursor:not-allowed;" required>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-cancel" onclick="closeEnrollModal()">Cancel</button>
+        <button type="submit" class="btn-enroll-submit">+ Enroll User</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- FIREBASE SDK INITIALIZATION -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+  import { getDatabase, ref, set, push, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyAx2EBFvZFTYyflmsDMs_GIQ4Y4e3n5v0g",
@@ -16,171 +446,183 @@
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
 
-  let currentBranch = "";
-  let currentAuditDate = "";
-  let tickets = [];
-  let html5QrCode = null;
+  const currentUserRole = (localStorage.getItem('ml_userRole') || 'user').toLowerCase();
+  const currentUserName = localStorage.getItem('ml_activeUser') || 'User';
 
-  const $ = sel => document.querySelector(sel);
-  const $$ = sel => Array.from(document.querySelectorAll(sel));
+  document.addEventListener('DOMContentLoaded', () => {
+    const badge = document.getElementById('user-role-badge');
+    badge.textContent = currentUserRole === 'admin' ? `👑 ${currentUserName} (ADMIN)` : `👤 ${currentUserName} (AUDITOR)`;
 
-  function slugBranch(name){ return name.trim().toLowerCase().replace(/[^a-z0-9]+/g,'-') || 'default'; }
+    // Set default date input
+    document.getElementById('user-audit-date').value = new Date().toISOString().slice(0, 10);
 
-  window.addEventListener('DOMContentLoaded', () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    currentBranch = urlParams.get('branch') || localStorage.getItem('ml_activeBranch') || 'ML Branch';
-    currentAuditDate = urlParams.get('date') || localStorage.getItem('vaultledger:remembered-audit-date') || new Date().toISOString().slice(0,10);
-
-    $('#branch-display').textContent = `🏢 ${currentBranch} (👑 ADMIN MODE)`;
-    $('#date-display').textContent = `Audit Date: ${currentAuditDate}`;
-
-    listenFirebaseStore();
-  });
-
-  // FIREBASE REALTIME LISTENER WITH "X PTNs SYNCED" NOTIFICATION
-  function listenFirebaseStore() {
-    const branchSlug = slugBranch(currentBranch);
-    onValue(ref(db, `qclStore/${branchSlug}`), (snapshot) => {
-      const val = snapshot.val();
-      if (val && val.tickets) {
-        tickets = val.tickets;
-        renderTable();
-
-        const count = tickets.length;
-        const msg = `✓ ${count} PTNs synced`;
-        
-        // Dynamic Notification Status
-        const statusTag = $('#network-status-tag');
-        if (statusTag) statusTag.textContent = msg;
-
-        // Update active upload card UI status
-        if (val.lastCategory) {
-          const card = document.querySelector(`.upload-card[data-cat="${val.lastCategory}"]`);
-          if (card) {
-            card.classList.add('done');
-            let pEl = card.querySelector('.sync-msg');
-            if (!pEl) {
-              pEl = document.createElement('p');
-              pEl.className = 'sync-msg';
-              pEl.style.fontSize = '12px';
-              pEl.style.fontWeight = 'bold';
-              pEl.style.color = 'var(--success)';
-              pEl.style.marginTop = '8px';
-              card.appendChild(pEl);
-            }
-            pEl.textContent = msg;
-          }
-        }
-      }
-    });
-  }
-
-  function syncToFirebase(categoryKey) {
-    if (!currentBranch) return;
-    const branchSlug = slugBranch(currentBranch);
-    set(ref(db, `qclStore/${branchSlug}`), { 
-      tickets, 
-      lastCategory: categoryKey || '',
-      lastUpdated: new Date().toISOString() 
-    });
-  }
-
-  function renderTable() {
-    const body = $('#ledger-body');
-    const query = $('#search').value.toLowerCase().trim();
-    body.innerHTML = '';
-
-    tickets.forEach((t, i) => {
-      if (query && !t.ptn.toLowerCase().includes(query) && !t.desc.toLowerCase().includes(query)) return;
-
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${i + 1}</td>
-        <td class="ptn">${t.ptn}</td>
-        <td>${t.date || '—'}</td>
-        <td>${t.desc || '—'}</td>
-        <td>₱${t.loan ? Number(t.loan).toLocaleString() : '0.00'}</td>
-        <td style="text-align:center;"><input type="checkbox" class="found-check" data-idx="${i}" ${t.found ? 'checked' : ''}></td>
-      `;
-      body.appendChild(tr);
-    });
-
-    $$('.found-check').forEach(chk => {
-      chk.addEventListener('change', (e) => {
-        const idx = e.target.dataset.idx;
-        tickets[idx].found = e.target.checked;
-        syncToFirebase();
+    if (currentUserRole === 'admin') {
+      document.querySelectorAll('.admin-only').forEach(el => {
+        if (el.tagName === 'BUTTON') el.style.display = 'inline-flex';
+        else if (el.id === 'tab-btn-users') el.style.display = 'inline-flex';
       });
+    } else {
+      document.querySelectorAll('.admin-only').forEach(el => {
+        el.style.setProperty('display', 'none', 'important');
+      });
+    }
+
+    switchTab('audit');
+  });
+
+  function listenUsers() {
+    onValue(ref(db, 'systemUsers'), (snapshot) => {
+      const container = document.getElementById('users-list');
+      if (!container) return;
+      container.innerHTML = '';
+      const data = snapshot.val();
+
+      if (data) {
+        Object.keys(data).forEach(key => {
+          const u = data[key];
+          const div = document.createElement('div');
+          div.className = 'list-item';
+          div.innerHTML = `
+            <div>
+              <strong>${u.fullName || u.username}</strong>
+              <div style="font-size:12px; color:var(--text-muted);">
+                Username: <b>${u.username}</b> | Role: <b style="text-transform:uppercase; color:var(--primary);">${u.role || 'user'}</b> | ${u.position || 'Auditor'} (${u.department || 'IAD'})
+              </div>
+            </div>
+            <span style="font-size:12px; font-weight:700; color:#16a34a;">Active</span>
+          `;
+          container.appendChild(div);
+        });
+      } else {
+        container.innerHTML = `<div style="font-size:12px; color:var(--text-muted);">No enrolled users yet. Click "+ Enroll New User" above.</div>`;
+      }
     });
   }
 
-  // FILE UPLOAD & AUTOMATIC PTN COUNT DETECTOR
-  $$('.cat-upload-btn').forEach(btn => btn.addEventListener('click', () => {
-    document.querySelector(`.cat-file-input[data-cat="${btn.dataset.cat}"]`).click();
-  }));
+  window.handleEnrollUser = function(e) {
+    e.preventDefault();
 
-  $$('.cat-file-input').forEach(inp => inp.addEventListener('change', async (e) => {
-    const file = e.target.files[0];
-    const catKey = e.target.dataset.cat;
-    if (!file) return;
+    const username = document.getElementById('modal-username').value.trim();
+    const fullName = document.getElementById('modal-fullname').value.trim();
+    const role = document.getElementById('modal-role').value;
+    const position = document.getElementById('modal-position').value.trim();
+    const department = document.getElementById('modal-dept').value.trim();
+    const email = document.getElementById('modal-email').value.trim();
+    const password = document.getElementById('modal-password').value.trim();
 
-    const buf = await file.arrayBuffer();
-    const wb = XLSX.read(buf, {type:'array'});
-    const sheet = wb.Sheets[wb.SheetNames[0]];
-    const rows = XLSX.utils.sheet_to_json(sheet, {header:1});
+    const newRef = push(ref(db, 'systemUsers'));
+    set(newRef, {
+      username,
+      fullName,
+      role,
+      position,
+      department,
+      email,
+      password,
+      createdDate: new Date().toISOString()
+    }).then(() => {
+      alert(`✓ User "${fullName}" successfully enrolled as ${role.toUpperCase()}!`);
+      closeEnrollModal();
+      document.getElementById('enroll-form').reset();
+    }).catch(err => alert("Error enrolling user: " + err.message));
+  };
 
-    // Extract valid PTN rows
-    const newTickets = [];
-    rows.forEach(r => {
-      if (r[0] && String(r[0]).match(/\d+/)) {
-        newTickets.push({ 
-          ptn: String(r[0]).trim(), 
-          date: currentAuditDate, 
-          desc: r[1] || 'Jewelry', 
-          loan: r[2] || 0, 
-          found: false 
-        });
-      }
-    });
-
-    if (newTickets.length > 0) {
-      tickets = newTickets;
-      syncToFirebase(catKey);
-      renderTable();
-      alert(`✓ Success! ${newTickets.length} PTNs synced to cloud database.`);
-    } else {
-      alert("⚠️ No valid PTN numbers found in uploaded file.");
-    }
-  }));
-
-  // CAMERA SCANNER LOGIC
-  $('#open-cam-btn').addEventListener('click', () => {
-    $('#cam-modal-overlay').classList.add('show');
-    if (!html5QrCode) html5QrCode = new Html5Qrcode("qr-reader");
-
-    html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (text) => {
-      const match = text.match(/\d{5,}-\d+/) || text.match(/\d+/);
-      if (match) {
-        const scannedPTN = match[0];
-        const idx = tickets.findIndex(t => t.ptn.includes(scannedPTN));
-        if (idx !== -1) {
-          tickets[idx].found = true;
-          syncToFirebase();
-          renderTable();
-          $('#cam-scan-result').style.color = "var(--success)";
-          $('#cam-scan-result').textContent = `✓ MATCHED: ${scannedPTN}`;
-        } else {
-          $('#cam-scan-result').style.color = "var(--primary)";
-          $('#cam-scan-result').textContent = `❌ NOT FOUND: ${scannedPTN}`;
-        }
-      }
-    }).catch(err => alert('Camera access error. Please grant camera permission.'));
-  });
-
-  $('#close-cam-modal').addEventListener('click', () => {
-    if (html5QrCode) html5QrCode.stop();
-    $('#cam-modal-overlay').classList.remove('show');
-  });
-
-  $('#search').addEventListener('input', renderTable);
+  listenUsers();
 </script>
+
+<script>
+  function autoGenerateCredentials() {
+    const fullNameInput = document.getElementById('modal-fullname').value.trim();
+    if (!fullNameInput) {
+      document.getElementById('modal-username').value = '';
+      document.getElementById('modal-password').value = '';
+      document.getElementById('modal-email').value = '';
+      return;
+    }
+
+    const nameParts = fullNameInput.toLowerCase().split(/\s+/).filter(Boolean);
+    
+    if (nameParts.length >= 2) {
+      const firstNameInitial = nameParts[0].charAt(0);
+      const lastName = nameParts[nameParts.length - 1];
+      
+      const generatedUsername = `${firstNameInitial}.${lastName}`;
+      
+      document.getElementById('modal-username').value = generatedUsername;
+      document.getElementById('modal-password').value = lastName;
+      document.getElementById('modal-email').value = `${generatedUsername}@sfcaliquidation.biz`;
+    } else if (nameParts.length === 1) {
+      document.getElementById('modal-username').value = nameParts[0];
+      document.getElementById('modal-password').value = nameParts[0];
+      document.getElementById('modal-email').value = `${nameParts[0]}@sfcaliquidation.biz`;
+    }
+  }
+
+  function switchTab(tabName) {
+    const auditTab = document.getElementById('tab-btn-audit');
+    const usersTab = document.getElementById('tab-btn-users');
+    const auditContent = document.getElementById('content-audit');
+    const usersContent = document.getElementById('content-users');
+
+    const currentUserRole = (localStorage.getItem('ml_userRole') || 'user').toLowerCase();
+
+    if (tabName === 'audit') {
+      auditTab.classList.add('active');
+      if (usersTab) usersTab.classList.remove('active');
+      
+      auditContent.classList.add('active');
+      usersContent.classList.remove('active');
+    } else if (tabName === 'users' && currentUserRole === 'admin') {
+      usersTab.classList.add('active');
+      auditTab.classList.remove('active');
+
+      usersContent.classList.add('active');
+      auditContent.classList.remove('active');
+    }
+  }
+
+  function toggleUserBranchBox() {
+    const box = document.getElementById('user-branch-box');
+    box.style.display = box.style.display === 'none' ? 'block' : 'none';
+  }
+
+  function launchUserBranchAudit() {
+    const bName = document.getElementById('user-branch-name').value.trim();
+    const aDate = document.getElementById('user-audit-date').value;
+
+    if (!bName) {
+      alert('Please enter branch name.');
+      return;
+    }
+
+    const role = localStorage.getItem('ml_userRole') || 'user';
+    localStorage.setItem('ml_activeBranch', bName);
+    localStorage.setItem('vaultledger:remembered-audit-date', aDate);
+
+    // Direct redirect to qcl.html
+    window.location.href = `qcl.html?branch=${encodeURIComponent(bName)}&date=${aDate}&role=${role}`;
+  }
+
+  function openEnrollModal() {
+    document.getElementById('enroll-modal-overlay').classList.add('show');
+  }
+
+  function closeEnrollModal() {
+    document.getElementById('enroll-modal-overlay').classList.remove('show');
+  }
+
+  function openBranch(branchName) {
+    const role = localStorage.getItem('ml_userRole') || 'user';
+    const aDate = new Date().toISOString().slice(0, 10);
+    window.location.href = `qcl.html?branch=${encodeURIComponent(branchName)}&date=${aDate}&role=${role}`;
+  }
+
+  function logout() {
+    localStorage.removeItem('ml_userRole');
+    localStorage.removeItem('ml_activeUser');
+    window.location.href = 'index.html';
+  }
+</script>
+
+</body>
+</html>
