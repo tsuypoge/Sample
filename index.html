@@ -109,12 +109,12 @@
   <form id="login-form">
     <div class="form-group">
       <label>Username</label>
-      <input type="text" id="username" class="input-control" placeholder="Enter username" required>
+      <input type="text" id="username" class="input-control" placeholder="Enter username" autocomplete="off" required>
     </div>
 
     <div class="form-group">
       <label>Password</label>
-      <input type="password" id="password" class="input-control" placeholder="Enter password" required>
+      <input type="password" id="password" class="input-control" placeholder="Enter password" autocomplete="off" required>
     </div>
 
     <button type="submit" class="btn-login">🔑 Login</button>
@@ -136,10 +136,6 @@
 
   initializeApp(firebaseConfig);
 
-  // Pre-fill username if previously saved
-  const savedUser = localStorage.getItem('ml_activeUser');
-  if (savedUser) document.getElementById('username').value = savedUser;
-
   document.getElementById('login-form').addEventListener('submit', function(e) {
     e.preventDefault();
     
@@ -151,20 +147,19 @@
       return;
     }
 
-    // Role Checker (admin / admin1234 gives full admin permissions)
+    // Admin role validation check (admin / admin1234)
     let role = "user";
     if (user.toLowerCase() === "admin" && pass === "admin1234") {
       role = "admin";
     }
 
-    // Fetch active branch or use default
     const savedBranch = localStorage.getItem('ml_activeBranch') || 'ML Branch';
 
-    // Store login context
+    // Save session state
     localStorage.setItem('ml_userRole', role);
     localStorage.setItem('ml_activeUser', user);
 
-    // Redirect to QCL main portal
+    // Redirect to main QCL dashboard
     window.location.href = `qcl.html?branch=${encodeURIComponent(savedBranch)}&role=${role}`;
   });
 </script>
