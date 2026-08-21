@@ -46,7 +46,6 @@
     box-shadow: 0 4px 20px rgba(0,0,0,0.03);
   }
 
-  /* HEADER BRAND & LOGOUT */
   .header-top {
     display: flex;
     justify-content: space-between;
@@ -75,7 +74,6 @@
   }
   .btn-logout:hover { background: #e2e8f0; }
 
-  /* NAVIGATION TABS DESIGN */
   .tab-navigation {
     display: flex;
     gap: 12px;
@@ -105,7 +103,6 @@
     box-shadow: 0 4px 12px rgba(15, 23, 42, 0.2);
   }
 
-  /* ROUNDED SEARCH BAR */
   .search-container {
     margin-bottom: 28px;
   }
@@ -139,7 +136,6 @@
     box-shadow: 0 0 0 3px rgba(204,0,0,0.1);
   }
 
-  /* TAB CONTENT PANELS */
   .tab-content { display: none !important; }
   .tab-content.active { display: block !important; }
 
@@ -171,7 +167,6 @@
   }
   .btn-action:hover { background: #a00000; }
 
-  /* ENROLL USER MODAL OVERLAY */
   .modal-overlay {
     position: fixed;
     top: 0; left: 0; width: 100vw; height: 100vh;
@@ -300,7 +295,6 @@
     <button class="nav-tab active" id="tab-btn-audit" onclick="switchTab('audit')">
       📋 All Branches
     </button>
-    <!-- ADMIN ONLY TAB BUTTON -->
     <button class="nav-tab admin-only" id="tab-btn-users" onclick="switchTab('users')" style="display:none;">
       👥 User Profiles & Credentials
     </button>
@@ -310,7 +304,7 @@
   <div class="search-container">
     <div class="search-wrapper">
       <span class="search-icon">🔍</span>
-      <input type="text" id="dashboard-search" class="input-search-pill" placeholder="Search User Name, Email, or Region...">
+      <input type="text" id="dashboard-search" class="input-search-pill" placeholder="Search Branch Name, Email, or Region..." oninput="filterBranches()">
     </div>
   </div>
 
@@ -319,7 +313,6 @@
     <div class="panel-card">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
         <h3 style="font-size:16px; font-weight:800; color:var(--dark-navy);">🏢 Registered Branch Inventories</h3>
-        <!-- USER / AUDITOR NEW BRANCH REDIRECT BUTTON -->
         <button class="btn-action" onclick="toggleUserBranchBox()">+ Open New Branch Audit</button>
       </div>
 
@@ -337,13 +330,7 @@
       </div>
 
       <div id="branches-list">
-        <div class="list-item">
-          <div>
-            <strong>ML Catarman</strong>
-            <div style="font-size:12px; color:var(--text-muted);">Region: Visayas</div>
-          </div>
-          <button class="btn-action" onclick="openBranch('ML Catarman')">Open Audit Engine</button>
-        </div>
+        <div style="font-size:12px; color:var(--text-muted); padding:10px 0;">Loading active branches...</div>
       </div>
     </div>
   </div>
@@ -356,7 +343,6 @@
         <button class="btn-action" onclick="openEnrollModal()">+ Enroll New User</button>
       </div>
 
-      <!-- Enrolled Users List -->
       <div id="users-list">
         <div class="list-item">
           <div>
@@ -453,7 +439,6 @@
     const badge = document.getElementById('user-role-badge');
     badge.textContent = currentUserRole === 'admin' ? `👑 ${currentUserName} (ADMIN)` : `👤 ${currentUserName} (AUDITOR)`;
 
-    // Set default date input
     document.getElementById('user-audit-date').value = new Date().toISOString().slice(0, 10);
 
     if (currentUserRole === 'admin') {
@@ -468,7 +453,50 @@
     }
 
     switchTab('audit');
+    listenAllBranchesAndStores();
   });
+
+  // REALTIME DYNAMIC SYNC FOR ALL BRANCHES
+  function listenAllBranchesAndStores() {
+    onValue(ref(db, 'qclStore'), (snapshot) => {
+      const container = document.getElementById('branches-list');
+      if (!container) return;
+      container.innerHTML = '';
+
+      const storeData = snapshot.val() || {};
+      const branchKeys = Object.keys(storeData);
+
+      if (branchKeys.length === 0) {
+        container.innerHTML = `<div style="font-size:12px; color:var(--text-muted); padding:10px 0;">No active branch audits found. Click "+ Open New Branch Audit" to start.</div>`;
+        return;
+      }
+
+      branchKeys.forEach(slug => {
+        const item = storeData[slug];
+        const tickets = item.tickets || [];
+        const totalPTN = tickets.length;
+        const foundPTN = tickets.filter(t => t.found).length;
+        const pct = totalPTN > 0 ? Math.round((foundPTN / totalPTN) * 100) : 0;
+        
+        // Clean up title
+        const branchName = slug.replace(/-/g, ' ').toUpperCase();
+
+        const div = document.createElement('div');
+        div.className = 'list-item branch-item';
+        div.setAttribute('data-name', branchName);
+        div.innerHTML = `
+          <div>
+            <strong style="font-size:14px; color:var(--dark-navy);">${branchName}</strong>
+            <div style="font-size:12px; color:var(--text-muted); margin-top:4px;">
+              Progress: <b style="color:var(--primary);">${foundPTN} / ${totalPTN} Found</b> (${pct}%)
+            </div>
+          </div>
+          <button class="btn-action" onclick="openBranch('${branchName}')">Open Audit Engine</button>
+        `;
+        container.appendChild(div);
+      });
+    });
+  }
 
   function listenUsers() {
     onValue(ref(db, 'systemUsers'), (snapshot) => {
@@ -531,6 +559,16 @@
 </script>
 
 <script>
+  function filterBranches() {
+    const query = document.getElementById('dashboard-search').value.toLowerCase().trim();
+    const items = document.querySelectorAll('.branch-item');
+    items.forEach(el => {
+      const name = el.getAttribute('data-name').toLowerCase();
+      if (name.includes(query)) el.style.display = 'flex';
+      else el.style.display = 'none';
+    });
+  }
+
   function autoGenerateCredentials() {
     const fullNameInput = document.getElementById('modal-fullname').value.trim();
     if (!fullNameInput) {
@@ -599,7 +637,6 @@
     localStorage.setItem('ml_activeBranch', bName);
     localStorage.setItem('vaultledger:remembered-audit-date', aDate);
 
-    // Direct redirect to qcl.html
     window.location.href = `qcl.html?branch=${encodeURIComponent(bName)}&date=${aDate}&role=${role}`;
   }
 
