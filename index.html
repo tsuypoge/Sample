@@ -39,8 +39,8 @@
   .login-card {
     background: var(--card-bg);
     width: 100%;
-    max-width: 400px;
-    padding: 32px 24px;
+    max-width: 380px;
+    padding: 36px 28px;
     border-radius: var(--radius);
     box-shadow: var(--shadow);
     border: 1px solid var(--border);
@@ -52,16 +52,15 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 10px;
-    margin-bottom: 12px;
+    margin-bottom: 16px;
   }
 
-  .logo-img { height: 40px; width: auto; object-fit: contain; }
+  .logo-img { height: 45px; width: auto; object-fit: contain; }
 
   h1 { font-size: 20px; font-weight: 800; color: var(--dark); margin-bottom: 4px; }
   p.sub { font-size: 13px; color: var(--text-muted); margin-bottom: 24px; }
 
-  .form-group { text-align: left; margin-bottom: 14px; }
+  .form-group { text-align: left; margin-bottom: 16px; }
 
   label {
     display: block; font-size: 11px; font-weight: 700;
@@ -70,7 +69,7 @@
   }
 
   .input-control {
-    width: 100%; padding: 10px 14px; border-radius: 8px;
+    width: 100%; padding: 12px 14px; border-radius: 8px;
     border: 1.5px solid var(--border); font-family: var(--font-sans);
     font-size: 14px; outline: none; transition: all 0.15s ease-in-out;
   }
@@ -84,15 +83,15 @@
     width: 100%; padding: 12px; background: var(--primary);
     color: #ffffff; border: none; border-radius: 8px;
     font-size: 14px; font-weight: 700; cursor: pointer;
-    margin-top: 10px; transition: background 0.15s;
+    margin-top: 8px; transition: background 0.15s;
   }
 
   .btn-login:hover { background: var(--primary-hover); }
 
-  .role-badge {
-    font-size: 11px; font-weight: 700; padding: 4px 8px;
-    border-radius: 4px; background: #e2e8f0; color: var(--dark);
-    display: inline-block; margin-bottom: 12px;
+  .error-msg {
+    color: #dc2626; background: #fef2f2; border: 1px solid #fecaca;
+    padding: 8px 12px; border-radius: 6px; font-size: 12px;
+    font-weight: 600; margin-bottom: 16px; display: none;
   }
 </style>
 </head>
@@ -103,12 +102,14 @@
     <img src="logo.png" class="logo-img" alt="ML Logo" onerror="this.style.display='none';">
   </div>
   <h1>QCL Audit Portal</h1>
-  <p class="sub">Login with your credentials</p>
+  <p class="sub">Sign in to start live inventory check</p>
+
+  <div id="error-msg" class="error-msg">Please enter username and password.</div>
 
   <form id="login-form">
     <div class="form-group">
       <label>Username</label>
-      <input type="text" id="username" class="input-control" placeholder="admin or auditor name" required>
+      <input type="text" id="username" class="input-control" placeholder="Enter username" required>
     </div>
 
     <div class="form-group">
@@ -116,17 +117,7 @@
       <input type="password" id="password" class="input-control" placeholder="Enter password" required>
     </div>
 
-    <div class="form-group">
-      <label>Branch Name</label>
-      <input type="text" id="branch" class="input-control" placeholder="e.g. ML Catarman" required>
-    </div>
-
-    <div class="form-group">
-      <label>Audit Date</label>
-      <input type="date" id="audit-date" class="input-control" required>
-    </div>
-
-    <button type="submit" class="btn-login">🔑 Login to System</button>
+    <button type="submit" class="btn-login">🔑 Login</button>
   </form>
 </div>
 
@@ -145,11 +136,8 @@
 
   initializeApp(firebaseConfig);
 
-  document.getElementById('audit-date').value = new Date().toISOString().slice(0, 10);
-
-  const savedBranch = localStorage.getItem('ml_activeBranch');
+  // Pre-fill username if previously saved
   const savedUser = localStorage.getItem('ml_activeUser');
-  if (savedBranch) document.getElementById('branch').value = savedBranch;
   if (savedUser) document.getElementById('username').value = savedUser;
 
   document.getElementById('login-form').addEventListener('submit', function(e) {
@@ -157,24 +145,27 @@
     
     const user = document.getElementById('username').value.trim();
     const pass = document.getElementById('password').value.trim();
-    const branch = document.getElementById('branch').value.trim();
-    const auditDate = document.getElementById('audit-date').value;
 
-    // ADMIN CREDENTIALS CHECK
+    if (!user || !pass) {
+      document.getElementById('error-msg').style.display = 'block';
+      return;
+    }
+
+    // Role Checker (admin / admin1234 gives full admin permissions)
     let role = "user";
     if (user.toLowerCase() === "admin" && pass === "admin1234") {
       role = "admin";
     }
 
-    // Save session role
+    // Fetch active branch or use default
+    const savedBranch = localStorage.getItem('ml_activeBranch') || 'ML Branch';
+
+    // Store login context
     localStorage.setItem('ml_userRole', role);
     localStorage.setItem('ml_activeUser', user);
-    localStorage.setItem('ml_activeBranch', branch);
-    localStorage.setItem('vaultledger:remembered-branch', branch);
-    localStorage.setItem('vaultledger:remembered-audit-date', auditDate);
 
-    const encodedBranch = encodeURIComponent(branch);
-    window.location.href = `qcl.html?branch=${encodedBranch}&date=${auditDate}&role=${role}`;
+    // Redirect to QCL main portal
+    window.location.href = `qcl.html?branch=${encodeURIComponent(savedBranch)}&role=${role}`;
   });
 </script>
 
