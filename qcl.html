@@ -13,7 +13,7 @@
 <!-- QR CODE GENERATOR LIBRARY -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
-<!-- TESSERACT OCR LIBRARY FOR READING PRINTED TEXT PTNS -->
+<!-- CAMERA & TEXT OCR DETECTOR -->
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
 <style>
@@ -173,21 +173,16 @@
   .cam-guide-box {
     position: absolute; top: 50%; left: 50%;
     transform: translate(-50%, -50%);
-    width: 80%; height: 60px;
+    width: 85%; height: 50px;
     border: 2px dashed #16a34a;
     box-shadow: 0 0 0 9999px rgba(0,0,0,0.4);
     border-radius: 8px;
     pointer-events: none;
   }
 
-  /* QR CODE DISPLAY BOX */
   #qr-code-holder {
-    display: flex;
-    justify-content: center;
-    padding: 16px;
-    background: #ffffff;
-    border-radius: 12px;
-    margin: 14px 0;
+    display: flex; justify-content: center; padding: 16px;
+    background: #ffffff; border-radius: 12px; margin: 14px 0;
   }
 </style>
 </head>
@@ -198,9 +193,7 @@
   <div class="offline-modal-card">
     <h2 style="color: var(--primary); margin-bottom: 6px;">📱 Open on Mobile Phone</h2>
     <p style="font-size:12px; color:var(--text-muted);">I-scan kining QR Code gamit ang camera sa imong cellphone aron mag-scan sa PTN Tag!</p>
-    
     <div id="qr-code-holder"></div>
-    
     <button class="btn" id="close-qr-modal" style="background:#f1f5f9; color:var(--text-main); width:100%; justify-content:center;">Close</button>
   </div>
 </div>
@@ -208,15 +201,15 @@
 <!-- CAMERA PTN OCR SCANNER MODAL -->
 <div id="cam-modal-overlay" class="offline-modal-overlay">
   <div class="offline-modal-card">
-    <h2 style="color: var(--primary); margin-bottom: 8px;">📷 PTN Text Camera Scanner</h2>
-    <p style="font-size:12px; color:var(--text-muted); margin-bottom:12px;">Itutok ang rectangle guide box sa Printed PTN number.</p>
+    <h2 style="color: var(--primary); margin-bottom: 8px;">📷 PTN Tag Camera Scanner</h2>
+    <p style="font-size:12px; color:var(--text-muted); margin-bottom:12px;">Itutok ang rectangle guide box sa PTN Number (e.g. 115901358-2026-00625).</p>
     
     <div id="cam-video-wrap">
       <video id="cam-video" autoplay playsinline></video>
       <div class="cam-guide-box"></div>
     </div>
     
-    <div id="cam-scan-result" style="font-weight: bold; font-family: var(--font-mono); font-size: 14px; min-height: 24px; color: var(--primary);">⚡ Reading PTN Text...</div>
+    <div id="cam-scan-result" style="font-weight: bold; font-family: var(--font-mono); font-size: 14px; min-height: 24px; color: var(--primary);">⚡ Point camera at PTN tag...</div>
 
     <div style="margin-top: 15px;">
       <button class="btn" id="close-cam-modal" style="background:#f1f5f9; color:var(--text-main); width:100%; justify-content:center;">Close Camera</button>
@@ -243,7 +236,6 @@
       <span>⬅️</span> Back to Dashboard
     </button>
     
-    <!-- BUTTON TO SHOW QR CODE FOR PHONE SCAN -->
     <button class="btn" id="show-qr-btn" style="background:#0f172a; color:#fff;">
       📱 Mobile Sync QR
     </button>
@@ -322,7 +314,7 @@
 
 </div>
 
-<!-- FIREBASE & CAMERA TEXT OCR RECOGNITION ENGINE -->
+<!-- FIREBASE & CAMERA PTN RECOGNITION ENGINE -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
@@ -669,7 +661,7 @@
     $('#qr-modal-overlay').classList.remove('show');
   });
 
-  // --- PRINTED TEXT PTN OCR CAMERA SCANNER ---
+  // --- TARGETED PRINTED TEXT PTN OCR CAMERA SCANNER ---
   $('#open-cam-btn').addEventListener('click', async () => {
     if (!activeCategory || !tickets.length) {
       alert('Palihug mag-upload una og report o mag-select sa category.');
@@ -697,7 +689,7 @@
         ocrWorker = await Tesseract.createWorker('eng');
       }
 
-      $('#cam-scan-result').textContent = '⚡ Point Camera at PTN Text...';
+      $('#cam-scan-result').textContent = '⚡ Point Camera at PTN Text Tag...';
 
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
@@ -711,10 +703,11 @@
 
         const { data: { text } } = await ocrWorker.recognize(canvas);
         
+        // Match exact PTN Pattern e.g. 115901358-2026-00625 or 115901358-2025-00750
         const ptnMatches = text.match(/\b\d{8,11}-\d{4}-\d{4,5}\b/g) || text.match(/\b\d{5,}-\d+\b/g);
 
         if (ptnMatches) {
-          const detectedPtn = ptnMatches[0];
+          const detectedPtn = ptnMatches[0].replace(/[^0-9-]/g, '');
           const matchIndex = tickets.findIndex(t => t.ptn.includes(detectedPtn));
 
           if (matchIndex !== -1) {
