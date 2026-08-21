@@ -324,7 +324,7 @@
 
 </div>
 
-<!-- FIREBASE & CAMERA INTEGRATED MODULE -->
+<!-- FIREBASE & CONTINUOUS AUTO-SCAN CAMERA MODULE -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
@@ -354,11 +354,31 @@
   let currentBranch = '';
   let currentAuditDate = '';
   let html5QrCode = null;
+  let lastScannedCode = "";
+  let scanCooldown = false;
 
   const $ = sel => document.querySelector(sel);
   const $$ = sel => Array.from(document.querySelectorAll(sel));
 
   function slugBranch(name){ return name.trim().toLowerCase().replace(/[^a-z0-9]+/g,'-') || 'default'; }
+
+  // AUDIO BEEP FEEDBACK
+  function playSuccessBeep() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = 880; // A5 note
+      gain.gain.value = 0.1;
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.15);
+
+      if (navigator.vibrate) navigator.vibrate(100);
+    } catch(e) {}
+  }
 
   window.addEventListener('DOMContentLoaded', () => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -644,7 +664,7 @@
     `;
   }
 
-  // --- CAMERA SCANNER FUNCTIONS ---
+  // --- AUTOMATIC CONTINUOUS CAMERA SCANNER ENGINE ---
   $('#open-cam-btn').addEventListener('click', () => {
     if (!activeCategory || !tickets.length) {
       alert('Palihug mag-upload una og report o mag-select sa category.');
@@ -663,7 +683,10 @@
     if (!html5QrCode) {
       html5QrCode = new Html5Qrcode("qr-reader");
     }
-    const config = { fps: 10, qrbox: { width: 250, height: 150 } };
+    
+    // 15 FPS CONTINUOUS DETECTOR CONFIG
+    const config = { fps: 15, qrbox: { width: 280, height: 160 } };
+    
     html5QrCode.start(
       { facingMode: "environment" },
       config,
@@ -678,19 +701,42 @@
   }
 
   function onScanSuccess(decodedText) {
-    const cleanScanned = decodedText.replace(/[^0-9]/g, '');
-    const matchIndex = tickets.findIndex(t => t.ptn.replace(/[^0-9]/g, '').includes(cleanScanned) && cleanScanned.length >= 5);
+    if (scanCooldown) return;
 
-    if (matchIndex !== -1) {
-      tickets[matchIndex].actual = true;
-      syncQCLCategoryToFirebase(activeCategory);
-      renderTable();
-      renderStats();
-      $('#cam-scan-result').style.color = 'var(--match)';
-      $('#cam-scan-result').textContent = `✓ MATCH FOUND: ${tickets[matchIndex].ptn}`;
-    } else {
-      $('#cam-scan-result').style.color = '#dc2626';
-      $('#cam-scan-result').textContent = `❌ Not Found: ${decodedText}`;
+    // Extract digits sequence from barcode / text
+    const cleanScanned = decodedText.replace(/[^0-9]/g, '');
+
+    if (cleanScanned.length >= 5) {
+      if (lastScannedCode === cleanScanned) return;
+
+      const matchIndex = tickets.findIndex(t => t.ptn.replace(/[^0-9]/g, '').includes(cleanScanned));
+
+      if (matchIndex !== -1) {
+        scanCooldown = true;
+        lastScannedCode = cleanScanned;
+
+        // Auto Mark Found
+        tickets[matchIndex].actual = true;
+        syncQCLCategoryToFirebase(activeCategory);
+        renderTable();
+        renderStats();
+
+        // Beep Sound & Vibrates Phone
+        playSuccessBeep();
+
+        $('#cam-scan-result').style.color = 'var(--match)';
+        $('#cam-scan-result').textContent = `✓ AUTOMATIC MATCH: ${tickets[matchIndex].ptn}`;
+
+        // Reset Scanner Cooldown after 1.5 Seconds for Next PTN
+        setTimeout(() => {
+          scanCooldown = false;
+          $('#cam-scan-result').textContent = '⚡ Ready for next PTN...';
+        }, 1500);
+
+      } else {
+        $('#cam-scan-result').style.color = '#dc2626';
+        $('#cam-scan-result').textContent = `❌ Not Found: ${decodedText}`;
+      }
     }
   }
 
@@ -707,5 +753,3 @@
 
   $('#print-btn').addEventListener('click', () => window.print());
 </script>
-</body>
-</html>
