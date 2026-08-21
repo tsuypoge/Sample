@@ -101,46 +101,93 @@
   <div class="logo-container">
     <img src="logo.png" class="logo-img" alt="ML Logo" onerror="this.style.display='none';">
   </div>
-  <h1>QCL Admin Portal</h1>
-  <p class="sub">Administrator Authentication Required</p>
+  <h1>QCL Portal</h1>
+  <p class="sub">User Authentication</p>
 
-  <div id="error-msg" class="error-msg">Invalid Admin Username or Password.</div>
+  <div id="error-msg" class="error-msg">Invalid Username or Password.</div>
 
   <form id="login-form">
     <div class="form-group">
-      <label>Admin Username</label>
-      <input type="text" id="username" class="input-control" placeholder="Enter admin username" autocomplete="off" required>
+      <label>Username</label>
+      <input type="text" id="username" class="input-control" placeholder="Enter username" autocomplete="off" required>
     </div>
 
     <div class="form-group">
-      <label>Admin Password</label>
-      <input type="password" id="password" class="input-control" placeholder="Enter admin password" autocomplete="off" required>
+      <label>Password</label>
+      <input type="password" id="password" class="input-control" placeholder="Enter password" autocomplete="off" required>
     </div>
 
-    <button type="submit" class="btn-login">🔑 Admin Login</button>
+    <button type="submit" class="btn-login" id="login-btn">🔑 Login</button>
   </form>
 </div>
 
-<script>
-  document.getElementById('login-form').addEventListener('submit', function(e) {
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getDatabase, ref, get, child } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAx2EBFvZFTYyflmsDMs_GIQ4Y4e3n5v0g",
+    authDomain: "qcl-recon.firebaseapp.com",
+    databaseURL: "https://qcl-recon-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "qcl-recon",
+    storageBucket: "qcl-recon.firebasestorage.app",
+    messagingSenderId: "1025895074848",
+    appId: "1:1025895074848:web:51742b4db399230b8f0045"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  document.getElementById('login-form').addEventListener('submit', async function(e) {
     e.preventDefault();
     
     const user = document.getElementById('username').value.trim();
     const pass = document.getElementById('password').value.trim();
     const errorMsg = document.getElementById('error-msg');
+    const loginBtn = document.getElementById('login-btn');
 
-    // CHECK ADMIN CREDENTIALS
+    loginBtn.textContent = 'Verifying...';
+    loginBtn.disabled = true;
+    errorMsg.style.display = 'none';
+
+    // HARDCODED MASTER ADMIN CHECK
     if (user.toLowerCase() === "admin" && pass === "admin1234") {
-      errorMsg.style.display = 'none';
-
-      // Save Session Data
       localStorage.setItem('ml_userRole', 'admin');
       localStorage.setItem('ml_activeUser', 'admin');
-
-      // Direct Redirect to Dashboard Page
       window.location.href = 'dashboard.html';
-    } else {
+      return;
+    }
+
+    // DYNAMIC DATABASE USER CHECK
+    try {
+      const dbRef = ref(db);
+      const snapshot = await get(child(dbRef, 'systemUsers'));
+      
+      let foundUser = null;
+      if (snapshot.exists()) {
+        const users = snapshot.val();
+        Object.keys(users).forEach(key => {
+          if (users[key].username.toLowerCase() === user.toLowerCase() && users[key].password === pass) {
+            foundUser = users[key];
+          }
+        });
+      }
+
+      if (foundUser) {
+        localStorage.setItem('ml_userRole', foundUser.role || 'user');
+        localStorage.setItem('ml_activeUser', foundUser.username);
+        window.location.href = 'dashboard.html';
+      } else {
+        errorMsg.textContent = 'Account not enrolled or incorrect password.';
+        errorMsg.style.display = 'block';
+      }
+    } catch (err) {
+      console.error(err);
+      errorMsg.textContent = 'Connection error. Please try again.';
       errorMsg.style.display = 'block';
+    } finally {
+      loginBtn.textContent = '🔑 Login';
+      loginBtn.disabled = false;
     }
   });
 </script>
