@@ -1,559 +1,330 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="tl">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>M Lhuillier — Admin Dashboard</title>
-<link rel="icon" type="image/png" href="logo.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <!-- Chart.js para sa Analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Font Awesome para sa Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
 
-<style>
-  :root {
-    --primary: #cc0000;
-    --primary-hover: #a00000;
-    --dark-navy: #0f172a;
-    --bg-main: #f8fafc;
-    --card-bg: #ffffff;
-    --border: #e2e8f0;
-    --text: #334155;
-    --text-muted: #64748b;
-    --active-tab-bg: #0f172a;
-    --active-tab-text: #ffffff;
-    --inactive-tab-bg: #edf2f7;
-    --inactive-tab-text: #334155;
-    --radius-pill: 12px;
-    --radius-search: 30px;
-  }
+        :root {
+            --primary: #4f46e5;
+            --bg-light: #f3f4f6;
+            --text-dark: #1f2937;
+            --sidebar-width: 250px;
+        }
 
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            display: flex;
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+            min-height: 100vh;
+        }
 
-  body {
-    font-family: 'Inter', system-ui, sans-serif;
-    background-color: var(--bg-main);
-    color: var(--text);
-    min-height: 100vh;
-    padding: 24px;
-  }
+        /* Sidebar Styles */
+        .sidebar {
+            width: var(--sidebar-width);
+            background-color: #1e1b4b;
+            color: #fff;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
 
-  .wrap {
-    max-width: 1200px;
-    margin: 0 auto;
-    background: var(--card-bg);
-    border-radius: 16px;
-    padding: 32px 28px;
-    border: 1px solid var(--border);
-    box-shadow: 0 4px 20px rgba(0,0,0,0.03);
-  }
+        .sidebar h2 {
+            margin-bottom: 30px;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
 
-  /* HEADER BRAND & LOGOUT */
-  .header-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 24px;
-  }
+        .nav-links {
+            list-style: none;
+        }
 
-  .brand-title {
-    font-size: 20px;
-    font-weight: 800;
-    color: var(--primary);
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
+        .nav-links li {
+            margin-bottom: 10px;
+        }
 
-  .btn-logout {
-    background: #f1f5f9;
-    color: #0f172a;
-    border: 1px solid var(--border);
-    padding: 8px 16px;
-    border-radius: 8px;
-    font-weight: 700;
-    font-size: 13px;
-    cursor: pointer;
-  }
-  .btn-logout:hover { background: #e2e8f0; }
+        .nav-links a {
+            color: #c7d2fe;
+            text-decoration: none;
+            padding: 12px 15px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-radius: 8px;
+            transition: 0.3s;
+        }
 
-  /* NAVIGATION TABS DESIGN */
-  .tab-navigation {
-    display: flex;
-    gap: 12px;
-    margin-bottom: 24px;
-    border-bottom: 1px solid var(--border);
-    padding-bottom: 20px;
-  }
+        .nav-links a:hover, .nav-links a.active {
+            background-color: var(--primary);
+            color: #fff;
+        }
 
-  .nav-tab {
-    background: var(--inactive-tab-bg);
-    color: var(--inactive-tab-text);
-    padding: 12px 24px;
-    border-radius: var(--radius-pill);
-    font-weight: 700;
-    font-size: 14px;
-    border: none;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    transition: all 0.2s ease;
-  }
+        /* Main Content Styles */
+        .main-content {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+        }
 
-  .nav-tab.active {
-    background: var(--active-tab-bg);
-    color: var(--active-tab-text);
-    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.2);
-  }
+        /* Header */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
 
-  /* ROUNDED SEARCH BAR */
-  .search-container {
-    margin-bottom: 28px;
-  }
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
 
-  .search-wrapper {
-    position: relative;
-    max-width: 500px;
-  }
+        .user-profile img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+        }
 
-  .search-icon {
-    position: absolute;
-    left: 16px;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 16px;
-  }
+        /* Stats Cards */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
 
-  .input-search-pill {
-    width: 100%;
-    padding: 12px 16px 12px 42px;
-    border-radius: var(--radius-search);
-    border: 1px solid #cbd5e1;
-    font-size: 14px;
-    outline: none;
-    color: var(--text);
-    transition: border-color 0.2s;
-  }
+        .card {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
 
-  .input-search-pill:focus {
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(204,0,0,0.1);
-  }
+        .card-info h3 {
+            font-size: 14px;
+            color: #6b7280;
+            margin-bottom: 5px;
+        }
 
-  /* TAB CONTENT PANELS */
-  .tab-content { display: none; }
-  .tab-content.active { display: block; }
+        .card-info p {
+            font-size: 24px;
+            font-weight: bold;
+        }
 
-  .panel-card {
-    background: #ffffff;
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 20px;
-  }
+        .card-icon {
+            font-size: 30px;
+            color: var(--primary);
+            background-color: #e0e7ff;
+            padding: 12px;
+            border-radius: 10px;
+        }
 
-  .list-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 14px 0;
-    border-bottom: 1px solid #f1f5f9;
-  }
-  .list-item:last-child { border-bottom: none; }
+        /* Analytics Chart */
+        .chart-container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
 
-  .btn-action {
-    background: var(--primary);
-    color: #fff;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 8px;
-    font-weight: 700;
-    font-size: 12px;
-    cursor: pointer;
-  }
-  .btn-action:hover { background: #a00000; }
+        /* Table */
+        .recent-orders {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
 
-  /* ENROLL USER MODAL OVERLAY */
-  .modal-overlay {
-    position: fixed;
-    top: 0; left: 0; width: 100vw; height: 100vh;
-    background: rgba(15, 23, 42, 0.6);
-    backdrop-filter: blur(4px);
-    display: flex; justify-content: center; align-items: center;
-    z-index: 9999; opacity: 0; pointer-events: none;
-    transition: opacity 0.2s ease;
-  }
+        .recent-orders h2 {
+            font-size: 18px;
+            margin-bottom: 15px;
+        }
 
-  .modal-overlay.show { opacity: 1; pointer-events: auto; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
 
-  .modal-card {
-    background: #ffffff;
-    border-radius: 16px;
-    padding: 28px;
-    width: 90%;
-    max-width: 440px;
-    box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
-    position: relative;
-  }
+        table th, table td {
+            text-align: left;
+            padding: 12px;
+            border-bottom: 1px solid #e5e7eb;
+        }
 
-  .modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-  }
+        table th {
+            color: #6b7280;
+            font-weight: 600;
+        }
 
-  .modal-title {
-    font-size: 16px;
-    font-weight: 800;
-    color: var(--dark-navy);
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
+        .status {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
 
-  .close-modal-btn {
-    background: none;
-    border: none;
-    font-size: 18px;
-    color: var(--text-muted);
-    cursor: pointer;
-  }
+        .status.completed { background-color: #d1fae5; color: #065f46; }
+        .status.pending { background-color: #fef3c7; color: #92400e; }
 
-  .form-group-modal {
-    margin-bottom: 14px;
-    text-align: left;
-  }
-
-  .form-group-modal label {
-    display: block;
-    font-size: 10px;
-    font-weight: 800;
-    color: var(--text-muted);
-    margin-bottom: 6px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-
-  .input-modal {
-    width: 100%;
-    padding: 10px 14px;
-    border-radius: 20px;
-    border: 1px solid #cbd5e1;
-    font-size: 13px;
-    outline: none;
-    font-family: inherit;
-  }
-
-  .input-modal:focus {
-    border-color: var(--primary);
-  }
-
-  .modal-footer {
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-    margin-top: 24px;
-  }
-
-  .btn-cancel {
-    background: #edf2f7;
-    color: var(--text);
-    border: none;
-    padding: 10px 20px;
-    border-radius: 20px;
-    font-weight: 700;
-    font-size: 12px;
-    cursor: pointer;
-  }
-
-  .btn-enroll-submit {
-    background: var(--primary);
-    color: #ffffff;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 20px;
-    font-weight: 700;
-    font-size: 12px;
-    cursor: pointer;
-  }
-  .btn-enroll-submit:hover { background: var(--primary-hover); }
-</style>
+        /* Responsive Layout */
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column;
+            }
+            .sidebar {
+                width: 100%;
+            }
+        }
+    </style>
 </head>
 <body>
 
-<div class="wrap">
-
-  <!-- HEADER -->
-  <div class="header-top">
-    <div class="brand-title">
-      <img src="logo.png" height="32" alt="ML Logo" onerror="this.style.display='none';">
-      <span>M Lhuillier QCL Audit Portal</span>
-    </div>
-    <button class="btn-logout" onclick="logout()">Logout</button>
-  </div>
-
-  <!-- TABS NAVIGATION -->
-  <div class="tab-navigation">
-    <button class="nav-tab active" id="tab-btn-audit" onclick="switchTab('audit')">
-      📋 All Liquidations Audit
-    </button>
-    <button class="nav-tab" id="tab-btn-users" onclick="switchTab('users')">
-      👥 User Profiles & Credentials
-    </button>
-  </div>
-
-  <!-- SEARCH BAR -->
-  <div class="search-container">
-    <div class="search-wrapper">
-      <span class="search-icon">🔍</span>
-      <input type="text" id="dashboard-search" class="input-search-pill" placeholder="Search User Name, Email, or Region...">
-    </div>
-  </div>
-
-  <!-- CONTENT 1: ALL LIQUIDATIONS / BRANCHES AUDIT -->
-  <div id="content-audit" class="tab-content active">
-    <div class="panel-card">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-        <h3 style="font-size:16px; font-weight:800; color:var(--dark-navy);">🏢 Registered Branch Inventories</h3>
-        <button class="btn-action" onclick="toggleAddBranch()">+ Enroll Branch</button>
-      </div>
-
-      <div id="add-branch-box" style="display:none; background:#f8fafc; padding:16px; border-radius:12px; margin-bottom:16px; border:1px solid var(--border);">
-        <div style="margin-bottom:10px;">
-          <label style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Branch Name</label>
-          <input type="text" id="new-branch-input" class="input-modal" style="border-radius:8px;" placeholder="e.g. ML Catarman Main">
+    <!-- Sidebar Section -->
+    <aside class="sidebar">
+        <div>
+            <h2><i class="fa-solid fa-chart-line"></i> AdminPanel</h2>
+            <ul class="nav-links">
+                <li><a href="#" class="active"><i class="fa-solid fa-house"></i> Dashboard</a></li>
+                <li><a href="#"><i class="fa-solid fa-users"></i> Users</a></li>
+                <li><a href="#"><i class="fa-solid fa-cart-shopping"></i> Orders</a></li>
+                <li><a href="#"><i class="fa-solid fa-chart-simple"></i> Analytics</a></li>
+                <li><a href="#"><i class="fa-solid fa-gear"></i> Settings</a></li>
+            </ul>
         </div>
-        <button class="btn-action" onclick="saveNewBranch()" style="width:100%;">Save Branch</button>
-      </div>
+        <ul class="nav-links">
+            <li><a href="#"><i class="fa-solid fa-right-from-bracket"></i> Logout</a></li>
+        </ul>
+    </aside>
 
-      <div id="branches-list">
-        <div class="list-item">
-          <div>
-            <strong>ML Catarman</strong>
-            <div style="font-size:12px; color:var(--text-muted);">Region: Visayas</div>
-          </div>
-          <button class="btn-action" onclick="openBranch('ML Catarman')">Open Audit Engine</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- CONTENT 2: USER PROFILES & CREDENTIALS -->
-  <div id="content-users" class="tab-content">
-    <div class="panel-card">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-        <h3 style="font-size:16px; font-weight:800; color:var(--dark-navy);">👥 User Profiles & Credentials</h3>
-        <button class="btn-action" onclick="openEnrollModal()">+ Enroll New User</button>
-      </div>
-
-      <!-- Enrolled Users List -->
-      <div id="users-list">
-        <div class="list-item">
-          <div>
-            <strong>System Administrator</strong>
-            <div style="font-size:12px; color:var(--text-muted);">Username: admin | StrikeForce/Fraud Audit-IAD</div>
-          </div>
-          <span style="font-size:12px; font-weight:700; color:#16a34a;">Active</span>
-        </div>
-      </div>
-    </div>
-  </div>
-
-</div>
-
-<!-- ENROLL NEW USER MODAL POPUP -->
-<div id="enroll-modal-overlay" class="modal-overlay">
-  <div class="modal-card">
-    <div class="modal-header">
-      <div class="modal-title">
-        <span style="color:var(--primary); font-size:18px;">+</span> Enroll New User
-      </div>
-      <button class="close-modal-btn" onclick="closeEnrollModal()">✕</button>
-    </div>
-
-    <form id="enroll-form" onsubmit="handleEnrollUser(event)">
-      <div class="form-group-modal">
-        <label>FULL NAME</label>
-        <input type="text" id="modal-fullname" class="input-modal" placeholder="e.g. Rey John Duero" oninput="autoGenerateCredentials()" required>
-      </div>
-
-      <div class="form-group-modal">
-        <label>USERNAME (AUTO-GENERATED)</label>
-        <input type="text" id="modal-username" class="input-modal" placeholder="e.g. r.duero" readonly style="background:#f1f5f9; cursor:not-allowed;" required>
-      </div>
-
-      <div class="form-group-modal">
-        <label>DESIGNATION / POSITION</label>
-        <input type="text" id="modal-position" class="input-modal" placeholder="Audit Specialist" value="Audit Specialist" required>
-      </div>
-
-      <div class="form-group-modal">
-        <label>DEPARTMENT</label>
-        <input type="text" id="modal-dept" class="input-modal" placeholder="StrikeForce/Fraud Audit-IAD" value="StrikeForce/Fraud Audit-IAD" required>
-      </div>
-
-      <div class="form-group-modal">
-        <label>EMAIL ADDRESS</label>
-        <input type="email" id="modal-email" class="input-modal" placeholder="e.g. r.duero@sfcaliquidation.biz" required>
-      </div>
-
-      <div class="form-group-modal">
-        <label>DEFAULT PASSWORD (AUTO-GENERATED)</label>
-        <input type="text" id="modal-password" class="input-modal" placeholder="Auto-generated from Last Name" readonly style="background:#f1f5f9; cursor:not-allowed;" required>
-      </div>
-
-      <div class="modal-footer">
-        <button type="button" class="btn-cancel" onclick="closeEnrollModal()">Cancel</button>
-        <button type="submit" class="btn-enroll-submit">+ Enroll User</button>
-      </div>
-    </form>
-  </div>
-</div>
-
-<!-- FIREBASE SDK INITIALIZATION -->
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getDatabase, ref, set, push, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyAx2EBFvZFTYyflmsDMs_GIQ4Y4e3n5v0g",
-    authDomain: "qcl-recon.firebaseapp.com",
-    databaseURL: "https://qcl-recon-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId: "qcl-recon",
-    storageBucket: "qcl-recon.firebasestorage.app",
-    messagingSenderId: "1025895074848",
-    appId: "1:1025895074848:web:51742b4db399230b8f0045"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const db = getDatabase(app);
-
-  // FETCH ENROLLED USERS FROM FIREBASE
-  function listenUsers() {
-    onValue(ref(db, 'systemUsers'), (snapshot) => {
-      const container = document.getElementById('users-list');
-      container.innerHTML = '';
-      const data = snapshot.val();
-
-      if (data) {
-        Object.keys(data).forEach(key => {
-          const u = data[key];
-          const div = document.createElement('div');
-          div.className = 'list-item';
-          div.innerHTML = `
-            <div>
-              <strong>${u.fullName || u.username}</strong>
-              <div style="font-size:12px; color:var(--text-muted);">
-                Username: <b>${u.username}</b> | ${u.position || 'Auditor'} (${u.department || 'IAD'})
-              </div>
+    <!-- Main Content Section -->
+    <main class="main-content">
+        <!-- Header -->
+        <header>
+            <h1>Dashboard Overview</h1>
+            <div class="user-profile">
+                <img src="https://via.placeholder.com/40" alt="Admin Avatar">
+                <span>Juan Cruz</span>
             </div>
-            <span style="font-size:12px; font-weight:700; color:#16a34a;">Active</span>
-          `;
-          container.appendChild(div);
+        </header>
+
+        <!-- Stats Cards Grid -->
+        <section class="cards-grid">
+            <div class="card">
+                <div class="card-info">
+                    <h3>TOTAL USERS</h3>
+                    <p>1,248</p>
+                </div>
+                <i class="fa-solid fa-users card-icon"></i>
+            </div>
+            <div class="card">
+                <div class="card-info">
+                    <h3>TOTAL ORDERS</h3>
+                    <p>532</p>
+                </div>
+                <i class="fa-solid fa-bag-shopping card-icon"></i>
+            </div>
+            <div class="card">
+                <div class="card-info">
+                    <h3>TOTAL REVENUE</h3>
+                    <p>₱124,500</p>
+                </div>
+                <i class="fa-solid fa-peso-sign card-icon"></i>
+            </div>
+        </section>
+
+        <!-- Analytics Chart -->
+        <section class="chart-container">
+            <h2>Monthly Sales Overview</h2>
+            <canvas id="salesChart" height="100"></canvas>
+        </section>
+
+        <!-- Recent Transactions Table -->
+        <section class="recent-orders">
+            <h2>Recent Orders</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Order ID</th>
+                        <th>Customer</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>#ORD-001</td>
+                        <td>Maria Santos</td>
+                        <td>₱2,500.00</td>
+                        <td><span class="status completed">Completed</span></td>
+                    </tr>
+                    <tr>
+                        <td>#ORD-002</td>
+                        <td>Pedro Penduko</td>
+                        <td>₱1,200.00</td>
+                        <td><span class="status pending">Pending</span></td>
+                    </tr>
+                    <tr>
+                        <td>#ORD-003</td>
+                        <td>Ana Reyes</td>
+                        <td>₱4,800.00</td>
+                        <td><span class="status completed">Completed</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+    </main>
+
+    <!-- Chart Configuration Script -->
+    <script>
+        const ctx = document.getElementById('salesChart').getContext('2d');
+        const salesChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                datasets: [{
+                    label: 'Sales (in PHP)',
+                    data: [12000, 19000, 15000, 25000, 22000, 30000],
+                    borderColor: '#4f46e5',
+                    backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.3
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
         });
-      } else {
-        container.innerHTML = `<div style="font-size:12px; color:var(--text-muted);">No enrolled users yet. Click "+ Enroll New User" above.</div>`;
-      }
-    });
-  }
-
-  // SAVE NEW USER TO FIREBASE
-  window.handleEnrollUser = function(e) {
-    e.preventDefault();
-
-    const username = document.getElementById('modal-username').value.trim();
-    const fullName = document.getElementById('modal-fullname').value.trim();
-    const position = document.getElementById('modal-position').value.trim();
-    const department = document.getElementById('modal-dept').value.trim();
-    const email = document.getElementById('modal-email').value.trim();
-    const password = document.getElementById('modal-password').value.trim();
-
-    const newRef = push(ref(db, 'systemUsers'));
-    set(newRef, {
-      username,
-      fullName,
-      position,
-      department,
-      email,
-      password,
-      role: 'user',
-      createdDate: new Date().toISOString()
-    }).then(() => {
-      alert(`✓ User "${fullName}" successfully enrolled!`);
-      closeEnrollModal();
-      document.getElementById('enroll-form').reset();
-    }).catch(err => alert("Error enrolling user: " + err.message));
-  };
-
-  listenUsers();
-</script>
-
-<script>
-  // AUTOMATIC CREDENTIALS GENERATOR (USERNAME & DEFAULT PASSWORD)
-  function autoGenerateCredentials() {
-    const fullNameInput = document.getElementById('modal-fullname').value.trim();
-    if (!fullNameInput) {
-      document.getElementById('modal-username').value = '';
-      document.getElementById('modal-password').value = '';
-      document.getElementById('modal-email').value = '';
-      return;
-    }
-
-    const nameParts = fullNameInput.toLowerCase().split(/\s+/).filter(Boolean);
-    
-    if (nameParts.length >= 2) {
-      const firstNameInitial = nameParts[0].charAt(0);
-      const lastName = nameParts[nameParts.length - 1];
-      
-      const generatedUsername = `${firstNameInitial}.${lastName}`;
-      
-      document.getElementById('modal-username').value = generatedUsername;
-      document.getElementById('modal-password').value = lastName;
-      document.getElementById('modal-email').value = `${generatedUsername}@sfcaliquidation.biz`;
-    } else if (nameParts.length === 1) {
-      document.getElementById('modal-username').value = nameParts[0];
-      document.getElementById('modal-password').value = nameParts[0];
-      document.getElementById('modal-email').value = `${nameParts[0]}@sfcaliquidation.biz`;
-    }
-  }
-
-  function switchTab(tabName) {
-    document.getElementById('tab-btn-audit').classList.remove('active');
-    document.getElementById('tab-btn-users').classList.remove('active');
-    document.getElementById('content-audit').classList.remove('active');
-    document.getElementById('content-users').classList.remove('active');
-
-    if (tabName === 'audit') {
-      document.getElementById('tab-btn-audit').classList.add('active');
-      document.getElementById('content-audit').classList.add('active');
-    } else {
-      document.getElementById('tab-btn-users').classList.add('active');
-      document.getElementById('content-users').classList.add('active');
-    }
-  }
-
-  function openEnrollModal() {
-    document.getElementById('enroll-modal-overlay').classList.add('show');
-  }
-
-  function closeEnrollModal() {
-    document.getElementById('enroll-modal-overlay').classList.remove('show');
-  }
-
-  function toggleAddBranch() {
-    const box = document.getElementById('add-branch-box');
-    box.style.display = box.style.display === 'none' ? 'block' : 'none';
-  }
-
-  function openBranch(branchName) {
-    window.location.href = `qcl.html?branch=${encodeURIComponent(branchName)}&role=admin`;
-  }
-
-  function logout() {
-    localStorage.removeItem('ml_userRole');
-    localStorage.removeItem('ml_activeUser');
-    window.location.href = 'index.html';
-  }
-</script>
-
+    </script>
 </body>
 </html>
