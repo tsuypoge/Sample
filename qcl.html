@@ -92,7 +92,7 @@
 
 <div id="loading-overlay">
   <div style="font-size: 24px; margin-bottom: 10px;">⏳ Processing Upload...</div>
-  <div style="font-size: 13px; color: #cbd5e1;">Parsing Prenda/TE/Reapp records...</div>
+  <div style="font-size: 13px; color: #cbd5e1;">Uploading large datasets to cloud database...</div>
 </div>
 
 <header>
@@ -218,10 +218,15 @@
     $('#branch-display').textContent = `🏢 ${currentBranch}`;
     $('#date-display').textContent = `Audit Date: ${currentAuditDate}`;
 
-    const cached = localStorage.getItem(`qcl_data_${slugBranch(currentBranch)}`);
-    if (cached) {
-      tickets = JSON.parse(cached);
-      renderTable();
+    // SAFE LOCAL STORAGE LOAD
+    try {
+      const cached = localStorage.getItem(`qcl_data_${slugBranch(currentBranch)}`);
+      if (cached) {
+        tickets = JSON.parse(cached);
+        renderTable();
+      }
+    } catch(err) {
+      console.warn("Storage quota limit reached for local cache. Relying on Firebase Cloud.");
     }
 
     listenFirebaseStore();
@@ -233,7 +238,14 @@
       const val = snapshot.val();
       if (val && val.tickets) {
         tickets = val.tickets;
-        localStorage.setItem(`qcl_data_${branchSlug}`, JSON.stringify(tickets));
+        
+        // SAFE LOCAL STORAGE CACHING
+        try {
+          localStorage.setItem(`qcl_data_${branchSlug}`, JSON.stringify(tickets));
+        } catch (e) {
+          console.warn("Skipped localStorage caching due to 5MB browser quota limit.");
+        }
+
         renderTable();
         $('#network-status-tag').textContent = `✓ ${tickets.length} PTNs Synced`;
       }
@@ -244,9 +256,16 @@
     if (!currentBranch) return;
     const branchSlug = slugBranch(currentBranch);
     
-    localStorage.setItem(`qcl_data_${branchSlug}`, JSON.stringify(tickets));
+    // SAFE SAVE TO LOCAL STORAGE
+    try {
+      localStorage.setItem(`qcl_data_${branchSlug}`, JSON.stringify(tickets));
+    } catch (e) {
+      console.warn("Local storage limit reached. Data is saved directly to Cloud Database.");
+    }
     
     const foundCount = tickets.filter(t => t.found).length;
+    
+    // FIREBASE CLOUD DATABASE HAS NO 5MB LIMIT
     set(ref(db, `qclStore/${branchSlug}`), { 
       branchName: currentBranch,
       tickets: tickets,
@@ -306,7 +325,7 @@
     });
   }
 
-  // SAFE PARSER FOR PRENDA, TE, REAPP WITHOUT TIME ERROR
+  // UPLOAD CONTROLLER
   $$('.cat-upload-btn').forEach(btn => btn.addEventListener('click', () => {
     document.querySelector(`.cat-file-input[data-cat="${btn.dataset.cat}"]`).click();
   }));
@@ -321,7 +340,6 @@
     setTimeout(async () => {
       try {
         const buf = await file.arrayBuffer();
-        // RAW STRING READING TO PREVENT INVALID DATE ERRORS
         const wb = XLSX.read(buf, { type: 'array', raw: true, cellDates: false });
         const sheet = wb.Sheets[wb.SheetNames[0]];
         const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false });
@@ -331,19 +349,17 @@
         let lastValidDate = currentAuditDate;
 
         rows.forEach((row, rowIdx) => {
-          if (!row || row.length === 0 || rowIdx === 0) return; // Skip Header
+          if (!row || row.length === 0 || rowIdx === 0) return;
 
-          let rawPtn = String(row[1] || '').trim(); // Pawn Ticket Number (Column B)
+          let rawPtn = String(row[1] || '').trim();
           let rawDateVal = row[2] ? String(row[2]).trim() : '';
-          let descText = String(row[4] || '').trim(); // Description (Column E)
-          let loanVal = row[10] || 0; // Loan Value (Column K)
+          let descText = String(row[4] || '').trim();
+          let loanVal = row[10] || 0;
 
-          // Safe Date Format
           if (rawDateVal && rawDateVal !== 'None' && rawDateVal !== 'null') {
             lastValidDate = rawDateVal.split('T')[0] || rawDateVal;
           }
 
-          // Clean PTN String
           if (rawPtn && rawPtn !== 'None' && rawPtn !== 'null' && rawPtn.match(/\d/)) {
             lastValidPtn = rawPtn.replace(/[*]+$/g, '').trim();
           }
@@ -358,7 +374,6 @@
           }
         });
 
-        // APPEND NEW UNIQUE ITEMS
         const uniqueAdded = [];
         extractedItems.forEach(item => {
           if (!tickets.some(existing => existing.ptn === item.ptn && existing.desc === item.desc)) {
