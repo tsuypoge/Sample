@@ -1,241 +1,3 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>M Lhuillier — QCL Inventory Portal</title>
-<link rel="icon" type="image/png" href="logo.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
-
-<style>
-  :root {
-    --primary: #cc0000;
-    --primary-hover: #a00000;
-    --dark: #0f172a;
-    --bg-main: #f8fafc;
-    --card-bg: #ffffff;
-    --border: #e2e8f0;
-    --text: #1e293b;
-    --text-muted: #64748b;
-    
-    --success: #16a34a;
-    --success-bg: #f0fdf4;
-    --warning: #d97706;
-    --warning-bg: #fffbeb;
-
-    --font-sans: 'Inter', system-ui, sans-serif;
-    --font-mono: 'Roboto Mono', monospace;
-    --radius: 12px;
-  }
-
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-
-  body {
-    font-family: var(--font-sans);
-    background-color: var(--bg-main);
-    color: var(--text);
-    min-height: 100vh;
-    padding-bottom: 50px;
-  }
-
-  /* MODALS */
-  .modal-overlay {
-    position: fixed;
-    top: 0; left: 0; width: 100vw; height: 100vh;
-    background: rgba(15, 23, 42, 0.7);
-    backdrop-filter: blur(6px);
-    display: flex; justify-content: center; align-items: center;
-    z-index: 9999; opacity: 0; pointer-events: none;
-    transition: opacity 0.2s ease;
-  }
-
-  .modal-overlay.show { opacity: 1; pointer-events: auto; }
-
-  .modal-card {
-    background: #fff; border-radius: var(--radius);
-    padding: 24px; width: 90%; max-width: 450px;
-    text-align: center; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
-  }
-
-  header {
-    background: #ffffff;
-    border-bottom: 1px solid var(--border);
-    padding: 14px 24px;
-    position: sticky; top: 0; z-index: 100;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-  }
-
-  .header-wrap {
-    max-width: 1400px; margin: 0 auto;
-    display: flex; justify-content: space-between; align-items: center;
-  }
-
-  .brand-title { font-size: 18px; font-weight: 800; color: var(--primary); display: flex; align-items: center; gap: 8px; }
-  
-  .status-badge {
-    padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 700;
-    background: var(--success-bg); color: var(--success); border: 1px solid var(--success);
-  }
-  .status-badge.offline { background: #fef2f2; color: var(--primary); border-color: var(--primary); }
-
-  .wrap { max-width: 1400px; margin: 24px auto; padding: 0 20px; }
-
-  /* NAVIGATION & ACTIVE INFO BAR */
-  .info-bar {
-    background: var(--card-bg); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 16px 20px;
-    display: flex; justify-content: space-between; align-items: center;
-    margin-bottom: 20px; flex-wrap: wrap; gap: 12px;
-  }
-
-  .info-title { font-size: 15px; font-weight: 700; color: var(--dark); }
-  .info-sub { font-size: 12px; color: var(--text-muted); }
-
-  .btn {
-    font-family: var(--font-sans); font-size: 13px; font-weight: 600;
-    padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border);
-    background: #ffffff; color: var(--text); cursor: pointer;
-    display: inline-flex; align-items: center; gap: 6px; transition: all 0.15s;
-  }
-
-  .btn:hover { background: #f1f5f9; }
-  .btn-primary { background: var(--primary); color: #fff; border: none; }
-  .btn-primary:hover { background: var(--primary-hover); }
-
-  /* CARDS FOR FILE UPLOADS */
-  .grid-uploads { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 20px; }
-
-  .upload-card {
-    background: var(--card-bg); border: 2px dashed var(--border);
-    border-radius: var(--radius); padding: 20px; text-align: center; transition: all 0.2s;
-  }
-  .upload-card.done { border-style: solid; border-color: var(--success); background: var(--success-bg); }
-
-  /* TOOLBAR & SEARCH */
-  .controls-bar {
-    background: var(--card-bg); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 12px;
-    display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px;
-  }
-
-  .input-search {
-    flex: 1; min-width: 200px; padding: 8px 12px; border-radius: 6px;
-    border: 1px solid var(--border); font-size: 13px; outline: none;
-  }
-
-  /* LEDGER TABLE */
-  .table-card {
-    background: var(--card-bg); border: 1px solid var(--border);
-    border-radius: var(--radius); overflow-x: auto;
-  }
-
-  table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; }
-  th { background: #f8fafc; padding: 12px 16px; font-weight: 700; border-bottom: 1px solid var(--border); color: var(--text-muted); }
-  td { padding: 12px 16px; border-bottom: 1px solid var(--border); vertical-align: middle; }
-
-  tr:hover { background: #f1f5f9; cursor: pointer; }
-  .ptn { font-family: var(--font-mono); font-weight: 700; color: var(--dark); }
-
-  .found-check { width: 20px; height: 20px; accent-color: var(--success); cursor: pointer; }
-</style>
-</head>
-<body>
-
-<!-- OFFLINE WARNING MODAL -->
-<div id="offline-modal-overlay" class="modal-overlay">
-  <div class="modal-card">
-    <h3 style="color: var(--primary);">⚠️ Network Disconnected</h3>
-    <p style="margin: 10px 0; font-size: 13px; color: var(--text-muted);">Please check your internet connection to sync live audit data.</p>
-    <button class="btn btn-primary" onclick="window.location.reload();">Retry Connection</button>
-  </div>
-</div>
-
-<!-- CAMERA SCANNER MODAL -->
-<div id="cam-modal-overlay" class="modal-overlay">
-  <div class="modal-card" style="max-width: 480px;">
-    <h3>📷 PTN Barcode Scanner</h3>
-    <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">Point camera directly at PTN number/barcode.</p>
-    
-    <div id="qr-reader" style="width:100%; border-radius: 8px; overflow: hidden; background: #000; min-height: 220px;"></div>
-    
-    <div id="cam-scan-result" style="margin-top: 12px; font-weight: 700; font-family: var(--font-mono);"></div>
-
-    <button class="btn" id="close-cam-modal" style="margin-top: 16px; width: 100%;">Close Camera</button>
-  </div>
-</div>
-
-<header>
-  <div class="header-wrap">
-    <div class="brand-title">
-      <img src="logo.png" height="32" alt="ML Logo" onerror="this.style.display='none';">
-      <span>QCL Audit Engine</span>
-    </div>
-    <span class="status-badge" id="network-status-tag">Live Cloud Sync</span>
-  </div>
-</header>
-
-<div class="wrap">
-
-  <div class="info-bar">
-    <div>
-      <button class="btn" onclick="window.location.href='index.html'">⬅ Switch Branch</button>
-    </div>
-    <div style="text-align: right;">
-      <div class="info-title" id="branch-display">Loading Branch...</div>
-      <div class="info-sub" id="date-display">--</div>
-    </div>
-  </div>
-
-  <div class="grid-uploads">
-    <div class="upload-card" data-cat="prenda">
-      <h4 style="color:var(--primary);">Prenda</h4>
-      <p style="font-size: 11px; color: var(--text-muted); margin: 6px 0 12px;">Upload Excel/PDF Report</p>
-      <button class="btn cat-upload-btn" data-cat="prenda">Choose File</button>
-      <input type="file" class="cat-file-input" data-cat="prenda" accept=".xlsx,.xls,.csv,application/pdf" style="display:none;">
-    </div>
-    <div class="upload-card" data-cat="terms">
-      <h4 style="color:var(--primary);">Terms Extended</h4>
-      <p style="font-size: 11px; color: var(--text-muted); margin: 6px 0 12px;">Upload Excel/PDF Report</p>
-      <button class="btn cat-upload-btn" data-cat="terms">Choose File</button>
-      <input type="file" class="cat-file-input" data-cat="terms" accept=".xlsx,.xls,.csv,application/pdf" style="display:none;">
-    </div>
-    <div class="upload-card" data-cat="reappraisal">
-      <h4 style="color:var(--primary);">Re-appraisal</h4>
-      <p style="font-size: 11px; color: var(--text-muted); margin: 6px 0 12px;">Upload Excel/PDF Report</p>
-      <button class="btn cat-upload-btn" data-cat="reappraisal">Choose File</button>
-      <input type="file" class="cat-file-input" data-cat="reappraisal" accept=".xlsx,.xls,.csv,application/pdf" style="display:none;">
-    </div>
-  </div>
-
-  <div class="controls-bar">
-    <input type="text" id="search" class="input-search" placeholder="🔎 Search PTN or item description...">
-    <button class="btn btn-primary" id="open-cam-btn">📷 Scan PTN with Camera</button>
-  </div>
-
-  <div class="table-card">
-    <table>
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>PTN</th>
-          <th>Date</th>
-          <th>Description</th>
-          <th>Loan Amount</th>
-          <th style="text-align: center;">Found</th>
-        </tr>
-      </thead>
-      <tbody id="ledger-body">
-        <tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Select branch or upload files to display inventory.</td></tr>
-      </tbody>
-    </table>
-  </div>
-
-</div>
-
 <!-- FIREBASE MULTI-USER REALTIME ENGINE -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -264,19 +26,18 @@
 
   function slugBranch(name){ return name.trim().toLowerCase().replace(/[^a-z0-9]+/g,'-') || 'default'; }
 
-  // LOAD BRANCH SESSION DATA
   window.addEventListener('DOMContentLoaded', () => {
     const urlParams = new URLSearchParams(window.location.search);
     currentBranch = urlParams.get('branch') || localStorage.getItem('ml_activeBranch') || 'ML Branch';
     currentAuditDate = urlParams.get('date') || localStorage.getItem('vaultledger:remembered-audit-date') || new Date().toISOString().slice(0,10);
 
-    $('#branch-display').textContent = `🏢 ${currentBranch}`;
+    $('#branch-display').textContent = `🏢 ${currentBranch} (👑 ADMIN MODE)`;
     $('#date-display').textContent = `Audit Date: ${currentAuditDate}`;
 
     listenFirebaseStore();
   });
 
-  // FIREBASE REALTIME LISTENER
+  // FIREBASE REALTIME LISTENER WITH "X PTNs SYNCED" NOTIFICATION
   function listenFirebaseStore() {
     const branchSlug = slugBranch(currentBranch);
     onValue(ref(db, `qclStore/${branchSlug}`), (snapshot) => {
@@ -284,14 +45,44 @@
       if (val && val.tickets) {
         tickets = val.tickets;
         renderTable();
+
+        const count = tickets.length;
+        const msg = `✓ ${count} PTNs synced`;
+        
+        // Dynamic Notification Status
+        const statusTag = $('#network-status-tag');
+        if (statusTag) statusTag.textContent = msg;
+
+        // Update active upload card UI status
+        if (val.lastCategory) {
+          const card = document.querySelector(`.upload-card[data-cat="${val.lastCategory}"]`);
+          if (card) {
+            card.classList.add('done');
+            let pEl = card.querySelector('.sync-msg');
+            if (!pEl) {
+              pEl = document.createElement('p');
+              pEl.className = 'sync-msg';
+              pEl.style.fontSize = '12px';
+              pEl.style.fontWeight = 'bold';
+              pEl.style.color = 'var(--success)';
+              pEl.style.marginTop = '8px';
+              card.appendChild(pEl);
+            }
+            pEl.textContent = msg;
+          }
+        }
       }
     });
   }
 
-  function syncToFirebase() {
+  function syncToFirebase(categoryKey) {
     if (!currentBranch) return;
     const branchSlug = slugBranch(currentBranch);
-    set(ref(db, `qclStore/${branchSlug}`), { tickets, lastUpdated: new Date().toISOString() });
+    set(ref(db, `qclStore/${branchSlug}`), { 
+      tickets, 
+      lastCategory: categoryKey || '',
+      lastUpdated: new Date().toISOString() 
+    });
   }
 
   function renderTable() {
@@ -323,13 +114,14 @@
     });
   }
 
-  // FILE UPLOAD CONTROLS
+  // FILE UPLOAD & AUTOMATIC PTN COUNT DETECTOR
   $$('.cat-upload-btn').forEach(btn => btn.addEventListener('click', () => {
     document.querySelector(`.cat-file-input[data-cat="${btn.dataset.cat}"]`).click();
   }));
 
   $$('.cat-file-input').forEach(inp => inp.addEventListener('change', async (e) => {
     const file = e.target.files[0];
+    const catKey = e.target.dataset.cat;
     if (!file) return;
 
     const buf = await file.arrayBuffer();
@@ -337,20 +129,31 @@
     const sheet = wb.Sheets[wb.SheetNames[0]];
     const rows = XLSX.utils.sheet_to_json(sheet, {header:1});
 
-    // Simple PTN Parse Logic
-    tickets = [];
+    // Extract valid PTN rows
+    const newTickets = [];
     rows.forEach(r => {
       if (r[0] && String(r[0]).match(/\d+/)) {
-        tickets.push({ ptn: String(r[0]), date: currentAuditDate, desc: r[1] || 'Jewelry', loan: r[2] || 0, found: false });
+        newTickets.push({ 
+          ptn: String(r[0]).trim(), 
+          date: currentAuditDate, 
+          desc: r[1] || 'Jewelry', 
+          loan: r[2] || 0, 
+          found: false 
+        });
       }
     });
 
-    syncToFirebase();
-    renderTable();
-    e.target.closest('.upload-card').classList.add('done');
+    if (newTickets.length > 0) {
+      tickets = newTickets;
+      syncToFirebase(catKey);
+      renderTable();
+      alert(`✓ Success! ${newTickets.length} PTNs synced to cloud database.`);
+    } else {
+      alert("⚠️ No valid PTN numbers found in uploaded file.");
+    }
   }));
 
-  // CAMERA SCANNER
+  // CAMERA SCANNER LOGIC
   $('#open-cam-btn').addEventListener('click', () => {
     $('#cam-modal-overlay').classList.add('show');
     if (!html5QrCode) html5QrCode = new Html5Qrcode("qr-reader");
@@ -371,7 +174,7 @@
           $('#cam-scan-result').textContent = `❌ NOT FOUND: ${scannedPTN}`;
         }
       }
-    }).catch(err => alert('Camera permission error.'));
+    }).catch(err => alert('Camera access error. Please grant camera permission.'));
   });
 
   $('#close-cam-modal').addEventListener('click', () => {
@@ -381,5 +184,3 @@
 
   $('#search').addEventListener('input', renderTable);
 </script>
-</body>
-</html>
